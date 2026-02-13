@@ -1,20 +1,26 @@
 {
   "name": "smartcomponents",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Smart Components - AI-powered form inputs for ASP.NET",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "rollup -c",
+    "build:debug": "BUILD=Debug rollup -c",
+    "watch": "rollup -c -w",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "caret-pos": "^2.0.0"
   },
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-node-resolve": "^15.3.0",
     "@rollup/plugin-terser": "^0.4.4",
-    "@rollup/plugin-typescript": "^11.1.5",
-    "rollup": "^4.9.6",
-    "tslib": "^2.6.2"
+    "@rollup/plugin-typescript": "^12.1.2",
+    "rollup": "^4.29.1",
+    "tslib": "^2.8.1",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

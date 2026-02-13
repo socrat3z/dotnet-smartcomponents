@@ -5,7 +5,7 @@ export function registerSmartComboBoxCustomElement() {
 }
 
 class SmartComboBox extends HTMLElement {
-    inputElem: HTMLInputElement;
+    inputElem!: HTMLInputElement;
     requestSuggestionsTimeout = 0;
     debounceKeystrokesDelay = 250;
     currentAbortController: AbortController | null = null;
@@ -17,7 +17,7 @@ class SmartComboBox extends HTMLElement {
         if (!(this.inputElem instanceof HTMLInputElement)) {
             throw new Error('smart-combobox must be placed immediately after an input element');
         }
- 
+
         this.id = `smartcombobox-suggestions-${SmartComboBox.nextSuggestionsElemId++}`;
         this.classList.add('smartcombobox-suggestions');
         this.addEventListener('mousedown', event => {
@@ -70,15 +70,18 @@ class SmartComboBox extends HTMLElement {
     async _requestSuggestions() {
         this.currentAbortController = new AbortController();
 
-        const body = {
+        const body: Record<string, string> = {
             inputValue: this.inputElem.value,
-            maxResults: this.getAttribute('data-max-suggestions'),
-            similarityThreshold: this.getAttribute('data-similarity-threshold'),
+            maxResults: this.getAttribute('data-max-suggestions') ?? '',
+            similarityThreshold: this.getAttribute('data-similarity-threshold') ?? '',
         };
 
         const antiforgeryName = this.getAttribute('data-antiforgery-name');
         if (antiforgeryName) {
-            body[antiforgeryName] = this.getAttribute('data-antiforgery-value');
+            const antiforgeryValue = this.getAttribute('data-antiforgery-value');
+            if (antiforgeryValue) {
+                body[antiforgeryName] = antiforgeryValue;
+            }
         }
 
         let response: Response;
@@ -94,7 +97,11 @@ class SmartComboBox extends HTMLElement {
         try {
             // We rely on the URL being pathbase-relative for Blazor, or a ~/... URL that would already
             // be resolved on the server for MVC
-            response = await fetch(this.getAttribute('data-suggestions-url'), requestInit);
+            const url = this.getAttribute('data-suggestions-url');
+            if (!url) {
+                throw new Error('SmartComboBox is missing data-suggestions-url attribute');
+            }
+            response = await fetch(url, requestInit);
             const suggestions: string[] = await response.json();
             this._setSuggestions(suggestions);
         }
@@ -124,8 +131,11 @@ class SmartComboBox extends HTMLElement {
         });
 
         if (suggestions.length) {
-            this._updateSelection({ suggestion: this.children[0] as HTMLElement });
-            this.style.display = null; // Allow visibility to be controlled by focus rule in CSS
+            const firstChild = this.children[0];
+            if (firstChild) {
+                this._updateSelection({ suggestion: firstChild as HTMLElement });
+            }
+            this.style.display = '';  // Allow visibility to be controlled by focus rule in CSS
 
             // We rely on the input not moving relative to its offsetParent while the suggestions
             // are visible. Developers can always put the input directly inside a relatively-positioned
@@ -164,7 +174,7 @@ class SmartComboBox extends HTMLElement {
         if (suggestion) {
             this.selectedIndex = Array.from(this.children).indexOf(suggestion);
         } else {
-            if (isNaN(operation.offset)) {
+            if (operation.offset === undefined || isNaN(operation.offset)) {
                 throw new Error('Supply either offset or selection element');
             }
 
@@ -187,8 +197,10 @@ class SmartComboBox extends HTMLElement {
         suggestion.setAttribute('aria-selected', 'true');
         suggestion.classList.add('selected');
 
-        if (suggestion['scrollIntoViewIfNeeded']) {
-            suggestion['scrollIntoViewIfNeeded'](false);
+        // Type assertion for non-standard browser API
+        const suggestionWithScroll = suggestion as HTMLElement & { scrollIntoViewIfNeeded?: (centerIfNeeded: boolean) => void };
+        if (suggestionWithScroll.scrollIntoViewIfNeeded) {
+            suggestionWithScroll.scrollIntoViewIfNeeded(false);
         } else {
             // Firefox doesn't support scrollIntoViewIfNeeded, so we fall back on scrollIntoView.
             // This will align the top of the suggestion with the top of the scrollable area.

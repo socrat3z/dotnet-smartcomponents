@@ -7,7 +7,7 @@ export class OverlaySuggestionDisplay implements SuggestionDisplay {
     suggestionElement: HTMLDivElement;
     suggestionPrefixElement: HTMLSpanElement;
     suggestionTextElement: HTMLSpanElement;
-    showing: boolean;
+    showing = false;
 
     constructor(owner: SmartTextArea, private textArea: HTMLTextAreaElement) {
         this.suggestionElement = document.createElement('div');
@@ -41,7 +41,7 @@ export class OverlaySuggestionDisplay implements SuggestionDisplay {
 
         const caretOffset = getCaretOffsetFromOffsetParent(this.textArea);
         const style = this.suggestionElement.style;
-        style.minWidth = null;
+        style.minWidth = '';
         this.suggestionElement.classList.add('smart-textarea-suggestion-overlay-visible');
         style.zIndex = this.textArea.style.zIndex;
         style.top = caretOffset.top + 'px';
@@ -65,7 +65,7 @@ export class OverlaySuggestionDisplay implements SuggestionDisplay {
             / parseFloat(suggestionComputedStyle.lineHeight));
         if (numLinesOfText > 2) {
             const oldWidth = this.suggestionElement.offsetWidth;
-            style.minWidth = `calc(min(70vw, ${ (numLinesOfText * oldWidth / 2) }px))`; // Aim for 2 lines, but don't get wider than 70% of the screen
+            style.minWidth = `calc(min(70vw, ${(numLinesOfText * oldWidth / 2)}px))`; // Aim for 2 lines, but don't get wider than 70% of the screen
         }
 
         // If the suggestion is too far to the right, move it left so it's not off the screen
@@ -119,7 +119,8 @@ function getCurrentIncompleteWord(textArea: HTMLTextAreaElement, maxLength: numb
     // means we'll not show the prefix for those languages if you're in the middle
     // of longer text (and ensures we don't search through a long block), which is ideal.
     for (let i = caretPos - 1; i > caretPos - maxLength; i--) {
-        if (i < 0 || text[i].match(/\s/)) {
+        const char = text[i];
+        if (i < 0 || (char && char.match(/\s/))) {
             return text.substring(i + 1, caretPos);
         }
     }

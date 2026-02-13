@@ -31,17 +31,17 @@ export function setFormElementValueWithEvents(elem: HTMLInputElement | HTMLSelec
     }
 }
 
-export function isComboBox(elem): boolean {
-    return !!(elem.list || elem.getAttribute('data-autocomplete'));
+export function isComboBox(elem: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement): boolean {
+    return !!((elem instanceof HTMLInputElement && elem.list) || elem.getAttribute('data-autocomplete'));
 }
 
 // Client-side code (e.g., validation) may react when an element value is changed
 // We'll trigger the same kinds of events that fire if you type
-function notifyFormElementBeforeWritten(elem: HTMLElement) {
+function notifyFormElementBeforeWritten(elem: HTMLElement): void {
     elem.dispatchEvent(new CustomEvent('beforeinput', { bubbles: true, detail: { fromSmartComponents: true } }));
 }
 
-function notifyFormElementWritten(elem: HTMLElement) {
+function notifyFormElementWritten(elem: HTMLElement): void {
     elem.dispatchEvent(new CustomEvent('input', { bubbles: true, detail: { fromSmartComponents: true } }));
     elem.dispatchEvent(new CustomEvent('change', { bubbles: true, detail: { fromSmartComponents: true } }));
 }
@@ -50,12 +50,18 @@ function findSelectOptionByText(selectElem: HTMLSelectElement, valueText: string
     const options = Array.from(selectElem.querySelectorAll('option'));
     const exactMatches = options.filter(o => o.textContent === valueText);
     if (exactMatches.length > 0) {
-        return options.indexOf(exactMatches[0]);
+        const firstMatch = exactMatches[0];
+        if (firstMatch) {
+            return options.indexOf(firstMatch);
+        }
     }
 
     const partialMatches = options.filter(o => o.textContent && o.textContent.indexOf(valueText) >= 0);
     if (partialMatches.length === 1) {
-        return options.indexOf(partialMatches[0]);
+        const firstPartialMatch = partialMatches[0];
+        if (firstPartialMatch) {
+            return options.indexOf(firstPartialMatch);
+        }
     }
 
     return null;

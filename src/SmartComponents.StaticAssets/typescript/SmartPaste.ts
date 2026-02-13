@@ -78,12 +78,18 @@ function findInputRadioByText(form: HTMLFormElement, radioGroupName: string, val
         .map(e => ({ elem: e as HTMLInputElement, text: inferFieldDescription(form, e as HTMLInputElement) }));
     const exactMatches = candidates.filter(o => o.text === valueText);
     if (exactMatches.length > 0) {
-        return exactMatches[0].elem;
+        const firstMatch = exactMatches[0];
+        if (firstMatch) {
+            return firstMatch.elem;
+        }
     }
 
     const partialMatches = candidates.filter(o => o.text && o.text.indexOf(valueText) >= 0);
     if (partialMatches.length === 1) {
-        return partialMatches[0].elem;
+        const firstPartialMatch = partialMatches[0];
+        if (firstPartialMatch) {
+            return firstPartialMatch.elem;
+        }
     }
 
     return null;
@@ -143,17 +149,17 @@ function extractFormConfig(form: HTMLFormElement): FieldConfig[] {
         };
 
         if (element instanceof HTMLSelectElement) {
-            const options = Array.prototype.filter.call(element.querySelectorAll('option'), o => !!o.value);
-            fieldEntry.allowedValues = Array.prototype.map.call(options, o => o.textContent);
+            const options = Array.prototype.filter.call(element.querySelectorAll('option'), (o: HTMLOptionElement) => !!o.value) as HTMLOptionElement[];
+            fieldEntry.allowedValues = Array.prototype.map.call(options, (o: HTMLOptionElement) => o.textContent ?? '') as string[];
             fieldEntry.type = 'fixed-choices';
         } else if (isRadio) {
             fieldEntry.allowedValues = [];
             fieldEntry.type = 'fixed-choices';
-            Array.prototype.forEach.call(form.querySelectorAll('input[type=radio]'), e => {
+            Array.prototype.forEach.call(form.querySelectorAll('input[type=radio]'), (e: HTMLInputElement) => {
                 if (e.name === identifier) {
                     const choiceDescription = inferFieldDescription(form, e);
-                    if (choiceDescription) {
-                        fieldEntry.allowedValues!.push(choiceDescription);
+                    if (choiceDescription && fieldEntry.allowedValues) {
+                        fieldEntry.allowedValues.push(choiceDescription);
                     }
                 }
             });
@@ -175,7 +181,10 @@ function inferFieldDescription(form: HTMLFormElement, element: HTMLElement): str
     // If there's an explicit label, use it
     const labels = element.id && form.querySelectorAll(`label[for='${element.id}']`);
     if (labels && labels.length === 1) {
-        return labels[0].textContent.trim();
+        const firstLabel = labels[0];
+        if (firstLabel) {
+            return firstLabel.textContent?.trim() ?? null;
+        }
     }
 
     // Try searching up the DOM hierarchy to look for some container that only contains
@@ -200,10 +209,10 @@ function inferFieldDescription(form: HTMLFormElement, element: HTMLElement): str
     return element.getAttribute('name') || element.id;
 }
 
-async function getSmartPasteResponse(button: HTMLButtonElement, formConfig, clipboardContents): Promise<Response> {
-    const formFields = formConfig.map(entry => restrictProperties(entry, ['identifier', 'description', 'allowedValues', 'type']));
+async function getSmartPasteResponse(button: HTMLButtonElement, formConfig: FieldConfig[], clipboardContents: string): Promise<Response> {
+    const formFields = formConfig.map(entry => restrictProperties(entry as Record<string, unknown>, ['identifier', 'description', 'allowedValues', 'type']));
 
-    const body = {
+    const body: Record<string, string> = {
         dataJson: JSON.stringify({
             formFields,
             clipboardContents,
@@ -212,12 +221,18 @@ async function getSmartPasteResponse(button: HTMLButtonElement, formConfig, clip
 
     const antiforgeryName = button.getAttribute('data-antiforgery-name');
     if (antiforgeryName) {
-        body[antiforgeryName] = button.getAttribute('data-antiforgery-value');
+        const antiforgeryValue = button.getAttribute('data-antiforgery-value');
+        if (antiforgeryValue) {
+            body[antiforgeryName] = antiforgeryValue;
+        }
     }
 
     // We rely on the URL being pathbase-relative for Blazor, or a ~/... URL that would already
     // be resolved on the server for MVC
     const url = button.getAttribute('data-url');
+    if (!url) {
+        throw new Error('SmartPaste button is missing data-url attribute');
+    }
     return fetch(url, {
         method: 'post',
         headers: {
@@ -227,8 +242,8 @@ async function getSmartPasteResponse(button: HTMLButtonElement, formConfig, clip
     });
 }
 
-function restrictProperties(object, propertyNames) {
-    const result = {};
+function restrictProperties(object: Record<string, unknown>, propertyNames: string[]): Record<string, unknown> {
+    const result: Record<string, unknown> = {};
     propertyNames.forEach(propertyName => {
         const value = object[propertyName];
         if (value !== undefined) {
@@ -244,4 +259,5 @@ interface FieldConfig {
     element: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
     type: 'string' | 'boolean' | 'number' | 'fixed-choices';
     allowedValues?: string[];
+    [key: string]: unknown;
 }

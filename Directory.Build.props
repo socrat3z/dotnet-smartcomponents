@@ -15,7 +15,7 @@
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
-        <VersionPrefix>0.2.0</VersionPrefix>
+        <VersionPrefix>0.2.1</VersionPrefix>
         <VersionSuffix Condition="'$(BuildNumber)' == ''">dev</VersionSuffix>
         <VersionSuffix Condition="'$(BuildNumber)' != ''">preview$([System.String]::Format('{0:00000}', $([MSBuild]::Add($(BuildNumber), 10000))))</VersionSuffix>
         <PackageVersion>$(VersionPrefix)-$(VersionSuffix)</PackageVersion>

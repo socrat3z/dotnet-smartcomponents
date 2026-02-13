@@ -16,23 +16,39 @@ export class InlineSuggestionDisplay implements SuggestionDisplay {
         const self = this;
         Object.defineProperty(textArea, 'value', {
             get() {
-                const trueValue = self.originalValueProperty.get.call(textArea);
+                const getter = self.originalValueProperty.get;
+                if (!getter) {
+                    throw new Error('Property descriptor is missing getter');
+                }
+                const trueValue = getter.call(textArea);
                 return self.isShowing()
-                    ? trueValue.substring(0, self.suggestionStartPos) + trueValue.substring(self.suggestionEndPos)
+                    ? trueValue.substring(0, self.suggestionStartPos!) + trueValue.substring(self.suggestionEndPos!)
                     : trueValue;
             },
             set(v) {
-                self.originalValueProperty.set.call(textArea, v);
+                const setter = self.originalValueProperty.set;
+                if (!setter) {
+                    throw new Error('Property descriptor is missing setter');
+                }
+                setter.call(textArea, v);
             }
         });
     }
 
     get valueIncludingSuggestion() {
-        return this.originalValueProperty.get.call(this.textArea);
+        const getter = this.originalValueProperty.get;
+        if (!getter) {
+            throw new Error('Property descriptor is missing getter');
+        }
+        return getter.call(this.textArea);
     }
 
     set valueIncludingSuggestion(val: string) {
-        this.originalValueProperty.set.call(this.textArea, val);
+        const setter = this.originalValueProperty.set;
+        if (!setter) {
+            throw new Error('Property descriptor is missing setter');
+        }
+        setter.call(this.textArea, val);
     }
 
     isShowing(): boolean {
@@ -57,6 +73,9 @@ export class InlineSuggestionDisplay implements SuggestionDisplay {
     }
 
     accept(): void {
+        if (this.suggestionEndPos === null) {
+            return;
+        }
         this.textArea.setSelectionRange(this.suggestionEndPos, this.suggestionEndPos);
         this.suggestionStartPos = null;
         this.suggestionEndPos = null;
@@ -75,7 +94,7 @@ export class InlineSuggestionDisplay implements SuggestionDisplay {
 
         const prevSelectionStart = this.textArea.selectionStart;
         const prevSelectionEnd = this.textArea.selectionEnd;
-        this.valueIncludingSuggestion = this.valueIncludingSuggestion.substring(0, this.suggestionStartPos) + this.valueIncludingSuggestion.substring(this.suggestionEndPos);
+        this.valueIncludingSuggestion = this.valueIncludingSuggestion.substring(0, this.suggestionStartPos!) + this.valueIncludingSuggestion.substring(this.suggestionEndPos!);
 
         if (this.suggestionStartPos === prevSelectionStart && this.suggestionEndPos === prevSelectionEnd) {
             // For most interactions we don't need to do anything to preserve the cursor position, but for

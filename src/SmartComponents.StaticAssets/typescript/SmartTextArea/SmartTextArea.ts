@@ -9,8 +9,8 @@ export function registerSmartTextAreaCustomElement() {
 
 export class SmartTextArea extends HTMLElement {
     typingDebounceTimeout: number | null = null;
-    textArea: HTMLTextAreaElement;
-    suggestionDisplay: SuggestionDisplay;
+    textArea!: HTMLTextAreaElement;
+    suggestionDisplay!: SuggestionDisplay;
     pendingSuggestionAbortController?: AbortController;
 
     connectedCallback() {
@@ -64,19 +64,17 @@ export class SmartTextArea extends HTMLElement {
         }
     }
 
-    keyMatchesExistingSuggestion(key: string): boolean {
-        return ;
-    }
+
 
     // If this was changed to a 'keypress' event instead, we'd only initiate suggestions after
     // the user types a visible character, not pressing another key (e.g., arrows, or ctrl+c).
     // However for now I think it is desirable to show suggestions after cursor movement.
-    handleKeyUp(event: KeyboardEvent) {
+    handleKeyUp(_event: KeyboardEvent) {
         // If a suggestion is already visible, it must match the current keystroke or it would
         // already have been removed during keydown. So we only start the timeout process if
         // there's no visible suggestion.
         if (!this.suggestionDisplay.isShowing()) {
-            clearTimeout(this.typingDebounceTimeout);
+            clearTimeout(this.typingDebounceTimeout ?? undefined);
             this.typingDebounceTimeout = setTimeout(() => this.handleTypingPaused(), 350);
         }
     }
@@ -99,10 +97,10 @@ export class SmartTextArea extends HTMLElement {
     }
 
     removeExistingOrPendingSuggestion() {
-        clearTimeout(this.typingDebounceTimeout);
+        clearTimeout(this.typingDebounceTimeout ?? undefined);
 
         this.pendingSuggestionAbortController?.abort();
-        this.pendingSuggestionAbortController = null;
+        this.pendingSuggestionAbortController = undefined;
 
         this.suggestionDisplay.reject();
     }
@@ -117,16 +115,19 @@ export class SmartTextArea extends HTMLElement {
             cursorPosition: this.textArea.selectionStart,
         };
 
-        const body = {
+        const body: Record<string, string> = {
             // TODO: Limit the amount of text we send, e.g., to 100 characters before and after the cursor
             textBefore: snapshot.textAreaValue.substring(0, snapshot.cursorPosition),
             textAfter: snapshot.textAreaValue.substring(snapshot.cursorPosition),
-            config: this.getAttribute('data-config'),
+            config: this.getAttribute('data-config') ?? '',
         };
 
         const antiforgeryName = this.getAttribute('data-antiforgery-name');
         if (antiforgeryName) {
-            body[antiforgeryName] = this.getAttribute('data-antiforgery-value');
+            const antiforgeryValue = this.getAttribute('data-antiforgery-value');
+            if (antiforgeryValue) {
+                body[antiforgeryName] = antiforgeryValue;
+            }
         }
 
         const requestInit: RequestInit = {
@@ -138,11 +139,15 @@ export class SmartTextArea extends HTMLElement {
             signal: snapshot.abortSignal,
         };
 
-        let suggestionText: string;
+        let suggestionText: string | null = null;
         try {
             // We rely on the URL being pathbase-relative for Blazor, or a ~/... URL that would already
             // be resolved on the server for MVC
-            const httpResponse = await fetch(this.getAttribute('data-url'), requestInit);
+            const url = this.getAttribute('data-url');
+            if (!url) {
+                throw new Error('SmartTextArea is missing data-url attribute');
+            }
+            const httpResponse = await fetch(url, requestInit);
             suggestionText = httpResponse.ok ? await httpResponse.text() : null;
         } catch (ex) {
             if (ex instanceof DOMException && ex.name === 'AbortError') {
