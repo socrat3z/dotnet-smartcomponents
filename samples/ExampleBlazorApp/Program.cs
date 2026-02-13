@@ -1,6 +1,7 @@
 using ExampleBlazorApp.Components;
 using Microsoft.Extensions.AI;
 using OpenAI;
+using System.ClientModel;
 using System.Linq;
 using System.Numerics.Tensors;
 
@@ -13,16 +14,73 @@ builder.Services.AddRazorComponents()
 builder.Services.AddSmartComponents()
     .WithAntiforgeryValidation();
 
-// Note: the StartupKey value is just there so the app will start up. 
-builder.Services.AddSingleton(new OpenAIClient(builder.Configuration["AI:OpenAI:Key"] ?? "StartupKey"));
-builder.Services.AddChatClient(services =>
+// Configure AI backend - supports both OpenRouter and OpenAI
+var openRouterKey = builder.Configuration["AI:OpenRouter:Key"];
+var openAiKey = builder.Configuration["AI:OpenAI:Key"];
+
+Console.WriteLine("===== AI Configuration Debug =====");
+Console.WriteLine($"OpenRouter Key: {(string.IsNullOrEmpty(openRouterKey) ? "NOT SET" : $"***{openRouterKey.Substring(Math.Max(0, openRouterKey.Length - 4))}")}");
+Console.WriteLine($"OpenAI Key: {(string.IsNullOrEmpty(openAiKey) ? "NOT SET" : $"***{openAiKey.Substring(Math.Max(0, openAiKey.Length - 4))}")}");
+
+if (!string.IsNullOrEmpty(openRouterKey))
 {
-    var chatClient = new SmartComponents.Inference.SmartComponentsChatClient(services.GetRequiredService<OpenAIClient>()
-        .GetChatClient(builder.Configuration["AI:OpenAI:Chat:ModelId"] ?? "gpt-4o-mini").AsIChatClient());
-    return chatClient;
-});
-builder.Services.AddEmbeddingGenerator(services =>
-    services.GetRequiredService<OpenAIClient>().GetEmbeddingClient(builder.Configuration["AI:OpenAI:Embedding:ModelId"] ?? "text-embedding-3-small").AsIEmbeddingGenerator());
+    // Use OpenRouter configuration
+    var chatModelId = builder.Configuration["AI:OpenRouter:Chat:ModelId"] ?? "meta-llama/llama-3.3-70b-instruct";
+    var embeddingModelId = builder.Configuration["AI:OpenRouter:Embedding:ModelId"] ?? "openai/text-embedding-3-small";
+    var siteUrl = builder.Configuration["AI:OpenRouter:SiteUrl"] ?? "http://localhost";
+    var siteTitle = builder.Configuration["AI:OpenRouter:SiteTitle"] ?? "SmartComponents Demo";
+
+    Console.WriteLine($"Using OpenRouter with chat model: {chatModelId}");
+    Console.WriteLine($"Embedding model: {embeddingModelId}");
+    Console.WriteLine($"Site: {siteTitle} ({siteUrl})");
+
+    var openRouterOptions = new OpenAIClientOptions
+    {
+        Endpoint = new Uri("https://openrouter.ai/api/v1")
+    };
+
+    // Add OpenRouter-specific headers (required by OpenRouter)
+    openRouterOptions.AddPolicy(new OpenRouterHeaderPolicy(siteUrl, siteTitle), System.ClientModel.Primitives.PipelinePosition.PerCall);
+
+    var openRouterClient = new OpenAIClient(new ApiKeyCredential(openRouterKey), openRouterOptions);
+    
+    builder.Services.AddChatClient(services =>
+        new SmartComponents.Inference.SmartComponentsChatClient(
+            openRouterClient.GetChatClient(chatModelId).AsIChatClient()));
+    
+    builder.Services.AddEmbeddingGenerator(services =>
+        openRouterClient.GetEmbeddingClient(embeddingModelId).AsIEmbeddingGenerator());
+}
+else if (!string.IsNullOrEmpty(openAiKey))
+{
+    // Use OpenAI configuration
+    var chatModelId = builder.Configuration["AI:OpenAI:Chat:ModelId"] ?? "gpt-4o-mini";
+    var embeddingModelId = builder.Configuration["AI:OpenAI:Embedding:ModelId"] ?? "text-embedding-3-small";
+    
+    var openAiClient = new OpenAIClient(new ApiKeyCredential(openAiKey));
+    
+    builder.Services.AddChatClient(services =>
+        new SmartComponents.Inference.SmartComponentsChatClient(
+            openAiClient.GetChatClient(chatModelId).AsIChatClient()));
+    
+    builder.Services.AddEmbeddingGenerator(services =>
+        openAiClient.GetEmbeddingClient(embeddingModelId).AsIEmbeddingGenerator());
+}
+else
+{
+    // No API key configured - use a dummy client that will fail with a helpful error
+    Console.WriteLine("WARNING: No AI API key configured. SmartComponents features will not work.");
+    Console.WriteLine("Please set AI:OpenRouter:Key or AI:OpenAI:Key in your configuration.");
+    Console.WriteLine("See .env.sample or GETTING_STARTED.md for setup instructions.");
+    
+    var dummyClient = new OpenAIClient(new ApiKeyCredential("CONFIGURE_YOUR_API_KEY"));
+    builder.Services.AddChatClient(services =>
+        new SmartComponents.Inference.SmartComponentsChatClient(
+            dummyClient.GetChatClient("gpt-4o-mini").AsIChatClient()));
+    
+    builder.Services.AddEmbeddingGenerator(services =>
+        dummyClient.GetEmbeddingClient("text-embedding-3-small").AsIEmbeddingGenerator());
+}
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -94,3 +152,27 @@ static string[] FindClosest(ReadOnlyMemory<float> queryVector, (string Item, Rea
         .Select(x => x.Item)
         .ToArray();
 }
+
+// OpenRouter requires HTTP-Referer and X-Title headers
+sealed class OpenRouterHeaderPolicy(string? siteUrl, string? siteTitle) : System.ClientModel.Primitives.PipelinePolicy
+{
+    public override void Process(System.ClientModel.Primitives.PipelineMessage message, IReadOnlyList<System.ClientModel.Primitives.PipelinePolicy> pipeline, int currentIndex)
+    {
+        AddHeaders(message);
+        ProcessNext(message, pipeline, currentIndex);
+    }
+
+    public override async ValueTask ProcessAsync(System.ClientModel.Primitives.PipelineMessage message, IReadOnlyList<System.ClientModel.Primitives.PipelinePolicy> pipeline, int currentIndex)
+    {
+        AddHeaders(message);
+        await ProcessNextAsync(message, pipeline, currentIndex).ConfigureAwait(false);
+    }
+
+    private void AddHeaders(System.ClientModel.Primitives.PipelineMessage message)
+    {
+        Console.WriteLine($"[OpenRouter] Adding headers - Referer: {siteUrl}, Title: {siteTitle}");
+        if (!string.IsNullOrEmpty(siteUrl)) message.Request.Headers.Set("HTTP-Referer", siteUrl);
+        if (!string.IsNullOrEmpty(siteTitle)) message.Request.Headers.Set("X-Title", siteTitle);
+    }
+}
+

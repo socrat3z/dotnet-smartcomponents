@@ -3,8 +3,17 @@
 
 using System.Reflection;
 
+/// <summary>
+/// Utility class for loading shared configuration files within the repository.
+/// </summary>
 public static class RepoSharedConfigUtil
 {
+    /// <summary>
+    /// Adds the repository shared configuration file to the configuration builder.
+    /// This method searches for RepoSharedConfig.json starting from the entry assembly location
+    /// and moving up the directory tree.
+    /// </summary>
+    /// <param name="configuration">The configuration builder to add the shared config to.</param>
     public static void AddRepoSharedConfig(this IConfigurationBuilder configuration)
     {
         // This is only used within this repo to simplify sharing config
@@ -38,6 +47,11 @@ public static class RepoSharedConfigUtil
         }
     }
 
+    /// <summary>
+    /// Gets any configuration error that occurred during setup.
+    /// </summary>
+    /// <param name="config">The configuration to check for errors.</param>
+    /// <returns>An exception if there was a configuration error, otherwise null.</returns>
     public static Exception? GetConfigError(IConfiguration config)
     {
         // TODO: now that we are using the Microsoft.Extensions.AI.Abstractions library, what should we do here? Maybe we can just remove this?

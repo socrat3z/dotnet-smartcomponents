@@ -1,5 +1,6 @@
 import { registerSmartComboBoxCustomElement } from './SmartComboBox';
 import { registerSmartPasteClickHandler } from './SmartPaste';
+import { registerSmartMicClickHandler } from './SmartMic';
 import { registerSmartTextAreaCustomElement } from './SmartTextArea/SmartTextArea';
 
 // Only run this script once. If you import it multiple times, the 2nd-and-later are no-ops.
@@ -9,5 +10,6 @@ if (!Object.getOwnPropertyDescriptor(document, isLoadedMarker)) {
 
     registerSmartComboBoxCustomElement();
     registerSmartPasteClickHandler();
+    registerSmartMicClickHandler();
     registerSmartTextAreaCustomElement();
 }

@@ -1,13 +1,20 @@
+[env]
+_.file = ".env"
+
 [tasks.build]
 description = "Build the whole solution"
 run = "dotnet build"
+
+[tasks.build-ts]
+description = "Build TypeScript assets"
+run = "cd src/SmartComponents.StaticAssets && npm run build"
 
 [tasks.test]
 description = "Run all tests"
 run = "dotnet test"
 
 [tasks.run-blazor]
-description = "Run the example blazor app"
+description = "Run the example Blazor app"
 run = "dotnet run --project samples/ExampleBlazorApp/ExampleBlazorApp.csproj"
 
 [tasks.run-mvc]

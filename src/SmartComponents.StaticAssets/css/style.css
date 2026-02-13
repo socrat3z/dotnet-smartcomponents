@@ -88,3 +88,285 @@ input:focus + .smartcombobox-suggestions {
         opacity: 0%;
     }
 }
+
+/* SmartMic Styles */
+.smart-mic-icon {
+    width: 1.2rem;
+    height: 1.3rem;
+    display: inline;
+    vertical-align: text-bottom;
+    margin-inline-end: .1rem;
+}
+
+.smart-mic-button {
+    cursor: pointer;
+}
+
+.smart-mic-dialog {
+    max-width: 540px;
+    width: 90vw;
+    border: none;
+    border-radius: 1rem;
+    padding: 0;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.smart-mic-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.smart-mic-content {
+    padding: 0;
+}
+
+.smart-mic-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem 1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.smart-mic-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.smart-mic-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s ease;
+}
+
+.smart-mic-close:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.smart-mic-close svg {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: #666;
+}
+
+.smart-mic-body {
+    padding: 2rem;
+    min-height: 200px;
+}
+
+.smart-mic-visual-indicator {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.smart-mic-pulse-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: 3px solid #4CAF50;
+    border-radius: 50%;
+    opacity: 0;
+    animation: pulse-ring 2.4s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+.smart-mic-pulse-ring:nth-child(2) {
+    animation-delay: 0.8s;
+}
+
+.smart-mic-pulse-ring:nth-child(3) {
+    animation-delay: 1.6s;
+}
+
+@keyframes pulse-ring {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.4;
+    }
+    100% {
+        transform: scale(1.4);
+        opacity: 0;
+    }
+}
+
+.smart-mic-icon {
+    width: 48px;
+    height: 48px;
+    color: #4CAF50;
+    z-index: 1;
+}
+
+.smart-mic-instruction {
+    text-align: center;
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: #333;
+    margin: 0 0 1rem;
+}
+
+.smart-mic-live-transcript {
+    text-align: center;
+    font-size: 0.95rem;
+    color: #666;
+    font-style: italic;
+    min-height: 2rem;
+    margin: 0;
+}
+
+.smart-mic-transcript-edit {
+    width: 100%;
+    padding: 1rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    font-family: inherit;
+    resize: vertical;
+    transition: border-color 0.2s ease;
+}
+
+.smart-mic-transcript-edit:focus {
+    outline: none;
+    border-color: #4CAF50;
+}
+
+.smart-mic-state-review label {
+    display: block;
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.smart-mic-state-processing {
+    text-align: center;
+}
+
+.smart-mic-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(76, 175, 80, 0.2);
+    border-top-color: #4CAF50;
+    border-radius: 50%;
+    margin: 0 auto 1.5rem;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.smart-mic-state-processing p {
+    margin: 0;
+    font-size: 1rem;
+    color: #666;
+}
+
+.smart-mic-state-error {
+    text-align: center;
+}
+
+.smart-mic-error-icon {
+    width: 64px;
+    height: 64px;
+    color: #f44336;
+    margin: 0 auto 1rem;
+}
+
+.smart-mic-error-message {
+    margin: 0;
+    font-size: 1rem;
+    color: #666;
+}
+
+.smart-mic-footer {
+    display: flex;
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    justify-content: flex-end;
+}
+
+.smart-mic-button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.smart-mic-button-primary {
+    background: #4CAF50;
+    color: white;
+}
+
+.smart-mic-button-primary:hover {
+    background: #45a049;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.smart-mic-button-primary:active {
+    transform: translateY(0);
+}
+
+.smart-mic-button-secondary {
+    background: transparent;
+    color: #666;
+    border: 1px solid #ddd;
+}
+
+.smart-mic-button-secondary:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .smart-mic-dialog {
+        width: 95vw;
+        border-radius: 0.75rem;
+    }
+
+    .smart-mic-header,
+    .smart-mic-footer {
+        padding: 1.25rem 1.5rem;
+    }
+
+    .smart-mic-body {
+        padding: 1.5rem;
+    }
+
+    .smart-mic-visual-indicator {
+        width: 100px;
+        height: 100px;
+    }
+
+    .smart-mic-icon {
+        width: 40px;
+        height: 40px;
+    }
+}
+

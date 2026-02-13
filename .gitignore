@@ -8,3 +8,9 @@ artifacts/
 *.lib.module.js
 .tailwind/
 BenchmarkDotNet.Artifacts/
+
+# Environment variables and secrets
+.env
+.env.local
+RepoSharedConfig.json
+

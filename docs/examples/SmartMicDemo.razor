@@ -1,0 +1,116 @@
+@page "/smart-mic-demo"
+@using SmartComponents
+
+<h3>Smart Mic Demo - Field Report</h3>
+
+<p class="alert alert-info">
+    Click the microphone button and say something like: 
+    <em>"Unit 4B is showing critical status. Pump is vibrating excessively. Recommend immediate maintenance."</em>
+</p>
+
+<EditForm Model="@report" OnValidSubmit="HandleSubmit">
+    <div class="mb-3">
+        <label for="unitId" class="form-label">Unit ID</label>
+        <InputText id="unitId" @bind-Value="report.UnitId" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label for="description" class="form-label">Description</label>
+        <InputTextArea id="description" @bind-Value="report.Description" class="form-control" rows="4" />
+    </div>
+
+    <div class="mb-3">
+        <label for="status" class="form-label">Status</label>
+        <InputSelect id="status" @bind-Value="report.Status" class="form-control">
+            <option value="">Select status...</option>
+            <option value="Operational">Operational</option>
+            <option value="Warning">Warning</option>
+            <option value="Critical">Critical</option>
+            <option value="Under Maintenance">Under Maintenance</option>
+        </InputSelect>
+    </div>
+
+    <div class="mb-3">
+        <label for="priority" class="form-label">Priority</label>
+        <InputSelect id="priority" @bind-Value="report.Priority" class="form-control">
+            <option value="">Select priority...</option>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+            <option value="Urgent">Urgent</option>
+        </InputSelect>
+    </div>
+
+    <div class="mb-3">
+        <label for="recommendation" class="form-label">Recommendation</label>
+        <InputTextArea id="recommendation" @bind-Value="report.Recommendation" class="form-control" rows="3" />
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle"></i> Submit Report
+        </button>
+        
+        <SmartMicButton DefaultIcon class="btn btn-outline-success" />
+        
+        <button type="button" class="btn btn-outline-secondary" @onclick="ClearForm">
+            <i class="bi bi-x-circle"></i> Clear
+        </button>
+    </div>
+</EditForm>
+
+@if (submitted)
+{
+    <div class="alert alert-success mt-3">
+        <h4>Report Submitted Successfully!</h4>
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Unit ID:</dt>
+            <dd class="col-sm-9">@report.UnitId</dd>
+            
+            <dt class="col-sm-3">Status:</dt>
+            <dd class="col-sm-9">@report.Status</dd>
+            
+            <dt class="col-sm-3">Priority:</dt>
+            <dd class="col-sm-9">@report.Priority</dd>
+            
+            <dt class="col-sm-3">Description:</dt>
+            <dd class="col-sm-9">@report.Description</dd>
+            
+            <dt class="col-sm-3">Recommendation:</dt>
+            <dd class="col-sm-9">@report.Recommendation</dd>
+        </dl>
+    </div>
+}
+
+@code {
+    private FieldReport report = new();
+    private bool submitted = false;
+
+    private class FieldReport
+    {
+        public string? UnitId { get; set; }
+        public string? Description { get; set; }
+        public string? Status { get; set; }
+        public string? Priority { get; set; }
+        public string? Recommendation { get; set; }
+    }
+
+    private void HandleSubmit()
+    {
+        submitted = true;
+    }
+
+    private void ClearForm()
+    {
+        report = new();
+        submitted = false;
+    }
+}
+
+<style>
+    .smart-mic-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+</style>
