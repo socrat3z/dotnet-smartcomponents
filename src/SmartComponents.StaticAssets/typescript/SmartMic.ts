@@ -11,6 +11,7 @@ enum SmartMicState {
     Error = 'error'
 }
 
+
 /**
  * Web Speech API type declarations
  */
@@ -23,10 +24,13 @@ declare global {
     }
 }
 
+let dialogTextareaSelection: { value: string, start: number, end: number } | null = null;
+
 /**
  * Registers click handler for all smart-mic-button triggers
  */
 export function registerSmartMicClickHandler() {
+
     document.addEventListener('click', (evt) => {
         const target = evt.target;
         if (target instanceof Element) {
@@ -136,8 +140,12 @@ function createSmartMicDialog(_button: HTMLButtonElement, _form: HTMLFormElement
             </div>
             
             <div class="smart-mic-footer">
-                <button type="button" class="smart-mic-button smart-mic-button-secondary smart-mic-cancel">
-                    Cancel
+                <button type="button" class="smart-mic-button smart-mic-button-secondary smart-mic-retry" style="display: none;">
+                    <svg fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3.5 6.5A.5.5 0 0 1 4 7v1a4 4 0 0 0 8 0V7a.5.5 0 0 1 1 0v1a5 5 0 0 1-4.5 4.975V15h3a.5.5 0 0 1 0 1h-7a.5.5 0 0 1 0-1h3v-2.025A5 5 0 0 1 3 8V7a.5.5 0 0 1 .5-.5z"/>
+                        <path d="M10 8a2 2 0 1 1-4 0V3a2 2 0 1 1 4 0v5zM8 0a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V3a3 3 0 0 0-3-3z"/>
+                    </svg>
+                    Record Again
                 </button>
                 <button type="button" class="smart-mic-button smart-mic-button-primary smart-mic-stop" style="display: none;">
                     Stop Listening
@@ -166,10 +174,6 @@ function setupDialogAccessibility(dialog: HTMLDialogElement): void {
     // Close button
     const closeButton = dialog.querySelector('.smart-mic-close');
     closeButton?.addEventListener('click', () => closeDialog(dialog));
-
-    // Cancel button
-    const cancelButton = dialog.querySelector('.smart-mic-cancel');
-    cancelButton?.addEventListener('click', () => closeDialog(dialog));
 }
 
 /**
@@ -261,7 +265,41 @@ function startListening(dialog: HTMLDialogElement, button: HTMLButtonElement, fo
         showError(dialog, errorMessage);
     };
 
+    // Stop button
+    const stopButton = dialog.querySelector('.smart-mic-stop');
+    if (stopButton) {
+        stopButton.addEventListener('click', () => {
+            console.log('[SmartMic] User stopped recording');
+            recognition.stop();
+        }, { once: true });
+    }
+
+    // Retry button (actually restart)
+    const retryButton = dialog.querySelector('.smart-mic-retry');
+    if (retryButton) {
+        retryButton.addEventListener('click', () => {
+            // Save the state of the dialog's own textarea before restarting
+            const textarea = dialog.querySelector('.smart-mic-transcript-edit') as HTMLTextAreaElement;
+            if (textarea) {
+                dialogTextareaSelection = {
+                    value: textarea.value,
+                    start: textarea.selectionStart,
+                    end: textarea.selectionEnd
+                };
+            }
+
+            recognition.stop();
+            // recognition.onend will trigger and potentially show error/review
+            // but we want to just restart. 
+            // Better to use a flag.
+            (recognition as any)._isRetrying = true;
+            startListening(dialog, button, form, formConfig);
+        }, { once: true });
+    }
+
     recognition.onend = () => {
+        if ((recognition as any)._isRetrying) return;
+
         console.log('[SmartMic] Recognition ended');
         // When recognition ends, show review state with final transcript
         const fullTranscript = finalTranscript.trim();
@@ -280,15 +318,6 @@ function startListening(dialog: HTMLDialogElement, button: HTMLButtonElement, fo
         }
     };
 
-    // Stop button
-    const stopButton = dialog.querySelector('.smart-mic-stop');
-    if (stopButton) {
-        stopButton.addEventListener('click', () => {
-            console.log('[SmartMic] User stopped recording');
-            recognition.stop();
-        }, { once: true });
-    }
-
     try {
         recognition.start();
         console.log('[SmartMic] Starting speech recognition...');
@@ -306,7 +335,20 @@ function showReviewState(dialog: HTMLDialogElement, transcript: string, button: 
 
     const textareaElement = dialog.querySelector('.smart-mic-transcript-edit') as HTMLTextAreaElement;
     if (textareaElement) {
-        textareaElement.value = transcript;
+        if (dialogTextareaSelection) {
+            const { value, start, end } = dialogTextareaSelection;
+            const newText = transcript.trim();
+            const newValue = value.substring(0, start) + (start > 0 && value[start - 1] !== ' ' ? ' ' : '') + newText + (end < value.length && value[end] !== ' ' ? ' ' : '') + value.substring(end);
+            textareaElement.value = newValue;
+
+            // Positioning cursor after the new text
+            const newCursorPos = start + (start > 0 && value[start - 1] !== ' ' ? 1 : 0) + newText.length;
+            textareaElement.setSelectionRange(newCursorPos, newCursorPos);
+
+            dialogTextareaSelection = null; // Reset for next time
+        } else {
+            textareaElement.value = transcript;
+        }
         textareaElement.focus();
     }
 
@@ -321,6 +363,7 @@ function showReviewState(dialog: HTMLDialogElement, transcript: string, button: 
         }, { once: true });
     }
 }
+
 
 /**
  * Applies the transcript to the form via the inference API
@@ -374,13 +417,18 @@ function setState(dialog: HTMLDialogElement, state: SmartMicState): void {
     // Update button visibility
     const stopButton = dialog.querySelector('.smart-mic-stop');
     const applyButton = dialog.querySelector('.smart-mic-apply');
+    const retryButton = dialog.querySelector('.smart-mic-retry');
 
     if (stopButton instanceof HTMLElement) {
-        stopButton.style.display = state === SmartMicState.Listening ? 'inline-block' : 'none';
+        stopButton.style.display = state === SmartMicState.Listening ? 'inline-flex' : 'none';
     }
 
     if (applyButton instanceof HTMLElement) {
-        applyButton.style.display = state === SmartMicState.Review ? 'inline-block' : 'none';
+        applyButton.style.display = state === SmartMicState.Review ? 'inline-flex' : 'none';
+    }
+
+    if (retryButton instanceof HTMLElement) {
+        retryButton.style.display = (state === SmartMicState.Review || state === SmartMicState.Error) ? 'inline-flex' : 'none';
     }
 }
 
