@@ -68,114 +68,108 @@ async function openSmartMicDialog(button: HTMLButtonElement) {
     setupDialogAccessibility(dialog);
 
     // Show dialog
-    const dialogElement = dialog.querySelector('dialog');
-    if (dialogElement instanceof HTMLDialogElement) {
-        dialogElement.showModal();
-        startListening(dialog, button, form, formConfig);
-    }
+    dialog.showModal();
+    startListening(dialog, button, form, formConfig);
 }
 
 
 /**
  * Creates the Smart Mic dialog element
  */
-function createSmartMicDialog(_button: HTMLButtonElement, _form: HTMLFormElement, _formConfig: any[]): HTMLElement {
-    const container = document.createElement('div');
-    container.className = 'smart-mic-container';
+function createSmartMicDialog(_button: HTMLButtonElement, _form: HTMLFormElement, _formConfig: any[]): HTMLDialogElement {
+    const dialog = document.createElement('dialog');
+    dialog.className = 'smart-mic-dialog';
+    dialog.setAttribute('aria-labelledby', 'smart-mic-title');
+    dialog.setAttribute('aria-describedby', 'smart-mic-description');
 
-    container.innerHTML = `
-        <dialog class="smart-mic-dialog" aria-labelledby="smart-mic-title" aria-describedby="smart-mic-description">
-            <div class="smart-mic-content">
-                <div class="smart-mic-header">
-                    <h2 id="smart-mic-title">Voice Input</h2>
-                    <button type="button" class="smart-mic-close" aria-label="Close dialog">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M18 6L6 18M6 6l12 12"/>
+    dialog.innerHTML = `
+        <div class="smart-mic-content">
+            <div class="smart-mic-header">
+                <h2 id="smart-mic-title">Voice Input</h2>
+                <button type="button" class="smart-mic-close" aria-label="Close dialog">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div id="smart-mic-description" class="smart-mic-body">
+                <div class="smart-mic-state-listening" data-state="listening">
+                    <div class="smart-mic-visual-indicator">
+                        <div class="smart-mic-pulse-ring"></div>
+                        <div class="smart-mic-pulse-ring"></div>
+                        <div class="smart-mic-pulse-ring"></div>
+                        <svg class="smart-mic-icon-large" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M3.5 6.5A.5.5 0 0 1 4 7v1a4 4 0 0 0 8 0V7a.5.5 0 0 1 1 0v1a5 5 0 0 1-4.5 4.975V15h3a.5.5 0 0 1 0 1h-7a.5.5 0 0 1 0-1h3v-2.025A5 5 0 0 1 3 8V7a.5.5 0 0 1 .5-.5z"/>
+                            <path d="M10 8a2 2 0 1 1-4 0V3a2 2 0 1 1 4 0v5zM8 0a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V3a3 3 0 0 0-3-3z"/>
                         </svg>
-                    </button>
+                    </div>
+                    <p class="smart-mic-instruction">Listening... Speak now</p>
+                    <p class="smart-mic-live-transcript"></p>
                 </div>
                 
-                <div id="smart-mic-description" class="smart-mic-body">
-                    <div class="smart-mic-state-listening" data-state="listening">
-                        <div class="smart-mic-visual-indicator">
-                            <div class="smart-mic-pulse-ring"></div>
-                            <div class="smart-mic-pulse-ring"></div>
-                            <div class="smart-mic-pulse-ring"></div>
-                            <svg class="smart-mic-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-                            </svg>
-                        </div>
-                        <p class="smart-mic-instruction">Listening... Speak now</p>
-                        <p class="smart-mic-live-transcript"></p>
-                    </div>
-                    
-                    <div class="smart-mic-state-review" data-state="review" style="display: none;">
-                        <label for="smart-mic-transcript">
-                            Review and edit your transcription:
-                        </label>
-                        <textarea 
-                            id="smart-mic-transcript" 
-                            class="smart-mic-transcript-edit"
-                            rows="6"
-                            placeholder="Your transcription will appear here..."
-                        ></textarea>
-                    </div>
-                    
-                    <div class="smart-mic-state-processing" data-state="processing" style="display: none;">
-                        <div class="smart-mic-spinner"></div>
-                        <p>Processing your input...</p>
-                    </div>
-                    
-                    <div class="smart-mic-state-error" data-state="error" style="display: none;">
-                        <svg class="smart-mic-error-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="12" y1="8" x2="12" y2="12"/>
-                            <line x1="12" y1="16" x2="12.01" y2="16"/>
-                        </svg>
-                        <p class="smart-mic-error-message"></p>
-                    </div>
+                <div class="smart-mic-state-review" data-state="review" style="display: none;">
+                    <label for="smart-mic-transcript">
+                        Review and edit your transcription:
+                    </label>
+                    <textarea 
+                        id="smart-mic-transcript" 
+                        class="smart-mic-transcript-edit"
+                        rows="4"
+                        placeholder="Your transcription will appear here..."
+                    ></textarea>
                 </div>
                 
-                <div class="smart-mic-footer">
-                    <button type="button" class="smart-mic-button smart-mic-button-secondary smart-mic-cancel">
-                        Cancel
-                    </button>
-                    <button type="button" class="smart-mic-button smart-mic-button-primary smart-mic-stop" style="display: none;">
-                        Stop Listening
-                    </button>
-                    <button type="button" class="smart-mic-button smart-mic-button-primary smart-mic-apply" style="display: none;">
-                        Apply to Form
-                    </button>
+                <div class="smart-mic-state-processing" data-state="processing" style="display: none;">
+                    <div class="smart-mic-spinner"></div>
+                    <p>Processing your input...</p>
+                </div>
+                
+                <div class="smart-mic-state-error" data-state="error" style="display: none;">
+                    <svg class="smart-mic-error-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <p class="smart-mic-error-message"></p>
                 </div>
             </div>
-        </dialog>
+            
+            <div class="smart-mic-footer">
+                <button type="button" class="smart-mic-button smart-mic-button-secondary smart-mic-cancel">
+                    Cancel
+                </button>
+                <button type="button" class="smart-mic-button smart-mic-button-primary smart-mic-stop" style="display: none;">
+                    Stop Listening
+                </button>
+                <button type="button" class="smart-mic-button smart-mic-button-primary smart-mic-apply" style="display: none;">
+                    Apply to Form
+                </button>
+            </div>
+        </div>
     `;
 
-    return container;
+    return dialog;
 }
 
 /**
  * Sets up accessibility features for the dialog
  */
-function setupDialogAccessibility(container: HTMLElement): void {
-    const dialogElement = container.querySelector('dialog');
-    if (!dialogElement) return;
-
+function setupDialogAccessibility(dialog: HTMLDialogElement): void {
     // ESC key handling
-    dialogElement.addEventListener('keydown', (event) => {
+    dialog.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
-            closeDialog(container);
+            closeDialog(dialog);
         }
     });
 
     // Close button
-    const closeButton = container.querySelector('.smart-mic-close');
-    closeButton?.addEventListener('click', () => closeDialog(container));
+    const closeButton = dialog.querySelector('.smart-mic-close');
+    closeButton?.addEventListener('click', () => closeDialog(dialog));
 
     // Cancel button
-    const cancelButton = container.querySelector('.smart-mic-cancel');
-    cancelButton?.addEventListener('click', () => closeDialog(container));
+    const cancelButton = dialog.querySelector('.smart-mic-cancel');
+    cancelButton?.addEventListener('click', () => closeDialog(dialog));
 }
 
 /**
@@ -202,10 +196,10 @@ function isSpeechRecognitionAvailable(): boolean {
 /**
  * Starts listening to user speech
  */
-function startListening(container: HTMLElement, button: HTMLButtonElement, form: HTMLFormElement, formConfig: any[]): void {
+function startListening(dialog: HTMLDialogElement, button: HTMLButtonElement, form: HTMLFormElement, formConfig: any[]): void {
     const SpeechRecognition = getSpeechRecognitionConstructor();
     if (!SpeechRecognition) {
-        showError(container, 'Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.');
+        showError(dialog, 'Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.');
         return;
     }
     const recognition = new SpeechRecognition();
@@ -221,7 +215,7 @@ function startListening(container: HTMLElement, button: HTMLButtonElement, form:
     let hasDetectedSpeech = false;
 
     recognition.onstart = () => {
-        setState(container, SmartMicState.Listening);
+        setState(dialog, SmartMicState.Listening);
         console.log('[SmartMic] Recognition started - speak now!');
     };
 
@@ -240,7 +234,7 @@ function startListening(container: HTMLElement, button: HTMLButtonElement, form:
         }
 
         // Update live transcript display
-        const liveTranscriptElement = container.querySelector('.smart-mic-live-transcript');
+        const liveTranscriptElement = dialog.querySelector('.smart-mic-live-transcript');
         if (liveTranscriptElement) {
             const fullText = (finalTranscript + interimTranscript).trim();
             liveTranscriptElement.textContent = fullText || 'Listening...';
@@ -264,7 +258,7 @@ function startListening(container: HTMLElement, button: HTMLButtonElement, form:
             return;
         }
 
-        showError(container, errorMessage);
+        showError(dialog, errorMessage);
     };
 
     recognition.onend = () => {
@@ -272,22 +266,22 @@ function startListening(container: HTMLElement, button: HTMLButtonElement, form:
         // When recognition ends, show review state with final transcript
         const fullTranscript = finalTranscript.trim();
         if (fullTranscript) {
-            showReviewState(container, fullTranscript, button, form, formConfig);
+            showReviewState(dialog, fullTranscript, button, form, formConfig);
         } else if (hasDetectedSpeech) {
             // We detected some speech but it wasn't finalized
             const anyText = (finalTranscript + interimTranscript).trim();
             if (anyText) {
-                showReviewState(container, anyText, button, form, formConfig);
+                showReviewState(dialog, anyText, button, form, formConfig);
             } else {
-                showError(container, 'No clear speech was captured. Please speak more clearly and try again.');
+                showError(dialog, 'No clear speech was captured. Please speak more clearly and try again.');
             }
         } else {
-            showError(container, 'No speech was detected. Please check your microphone and try again.');
+            showError(dialog, 'No speech was detected. Please check your microphone and try again.');
         }
     };
 
     // Stop button
-    const stopButton = container.querySelector('.smart-mic-stop');
+    const stopButton = dialog.querySelector('.smart-mic-stop');
     if (stopButton) {
         stopButton.addEventListener('click', () => {
             console.log('[SmartMic] User stopped recording');
@@ -300,29 +294,29 @@ function startListening(container: HTMLElement, button: HTMLButtonElement, form:
         console.log('[SmartMic] Starting speech recognition...');
     } catch (error) {
         console.error('[SmartMic] Failed to start recognition:', error);
-        showError(container, 'Failed to start microphone. Please try again.');
+        showError(dialog, 'Failed to start microphone. Please try again.');
     }
 }
 
 /**
  * Shows the review state where user can edit the transcript
  */
-function showReviewState(container: HTMLElement, transcript: string, button: HTMLButtonElement, form: HTMLFormElement, formConfig: any[]): void {
-    setState(container, SmartMicState.Review);
+function showReviewState(dialog: HTMLDialogElement, transcript: string, button: HTMLButtonElement, form: HTMLFormElement, formConfig: any[]): void {
+    setState(dialog, SmartMicState.Review);
 
-    const textareaElement = container.querySelector('.smart-mic-transcript-edit') as HTMLTextAreaElement;
+    const textareaElement = dialog.querySelector('.smart-mic-transcript-edit') as HTMLTextAreaElement;
     if (textareaElement) {
         textareaElement.value = transcript;
         textareaElement.focus();
     }
 
     // Apply button
-    const applyButton = container.querySelector('.smart-mic-apply');
+    const applyButton = dialog.querySelector('.smart-mic-apply');
     if (applyButton) {
         applyButton.addEventListener('click', async () => {
             const editedTranscript = textareaElement?.value.trim();
             if (editedTranscript) {
-                await applyTranscriptToForm(container, editedTranscript, button, form, formConfig);
+                await applyTranscriptToForm(dialog, editedTranscript, button, form, formConfig);
             }
         }, { once: true });
     }
@@ -331,10 +325,11 @@ function showReviewState(container: HTMLElement, transcript: string, button: HTM
 /**
  * Applies the transcript to the form via the inference API
  */
-async function applyTranscriptToForm(container: HTMLElement, transcript: string, button: HTMLButtonElement, form: HTMLFormElement, formConfig: any[]): Promise<void> {
-    setState(container, SmartMicState.Processing);
+async function applyTranscriptToForm(dialog: HTMLDialogElement, transcript: string, button: HTMLButtonElement, form: HTMLFormElement, formConfig: any[]): Promise<void> {
+    setState(dialog, SmartMicState.Processing);
 
     try {
+        button.disabled = true;
         const url = button.getAttribute('data-url');
         if (!url) {
             throw new Error('SmartMic button is missing data-url attribute');
@@ -350,33 +345,35 @@ async function applyTranscriptToForm(container: HTMLElement, transcript: string,
         populateForm(form, formConfig, responseText);
 
         // Close dialog on success
-        closeDialog(container);
+        closeDialog(dialog);
     } catch (error) {
         console.error('Error applying transcript to form:', error);
-        showError(container, 'Failed to process your input. Please try again.');
+        showError(dialog, 'Failed to process your input. Please try again.');
+    } finally {
+        button.disabled = false;
     }
 }
 
 /**
  * Sets the dialog state and updates UI accordingly
  */
-function setState(container: HTMLElement, state: SmartMicState): void {
+function setState(dialog: HTMLDialogElement, state: SmartMicState): void {
     // Hide all state elements
-    container.querySelectorAll('[data-state]').forEach(el => {
+    dialog.querySelectorAll('[data-state]').forEach(el => {
         if (el instanceof HTMLElement) {
             el.style.display = 'none';
         }
     });
 
     // Show the appropriate state element
-    const stateElement = container.querySelector(`[data-state="${state}"]`);
+    const stateElement = dialog.querySelector(`[data-state="${state}"]`);
     if (stateElement instanceof HTMLElement) {
         stateElement.style.display = 'block';
     }
 
     // Update button visibility
-    const stopButton = container.querySelector('.smart-mic-stop');
-    const applyButton = container.querySelector('.smart-mic-apply');
+    const stopButton = dialog.querySelector('.smart-mic-stop');
+    const applyButton = dialog.querySelector('.smart-mic-apply');
 
     if (stopButton instanceof HTMLElement) {
         stopButton.style.display = state === SmartMicState.Listening ? 'inline-block' : 'none';
@@ -390,10 +387,10 @@ function setState(container: HTMLElement, state: SmartMicState): void {
 /**
  * Shows an error state in the dialog
  */
-function showError(container: HTMLElement, message: string): void {
-    setState(container, SmartMicState.Error);
+function showError(dialog: HTMLDialogElement, message: string): void {
+    setState(dialog, SmartMicState.Error);
 
-    const errorMessageElement = container.querySelector('.smart-mic-error-message');
+    const errorMessageElement = dialog.querySelector('.smart-mic-error-message');
     if (errorMessageElement) {
         errorMessageElement.textContent = message;
     }
@@ -402,14 +399,11 @@ function showError(container: HTMLElement, message: string): void {
 /**
  * Closes the dialog and cleans up
  */
-function closeDialog(container: HTMLElement): void {
-    const dialogElement = container.querySelector('dialog');
-    if (dialogElement instanceof HTMLDialogElement) {
-        dialogElement.close();
-    }
+function closeDialog(dialog: HTMLDialogElement): void {
+    dialog.close();
 
     // Remove from DOM after animation
     setTimeout(() => {
-        container.remove();
+        dialog.remove();
     }, 300);
 }
