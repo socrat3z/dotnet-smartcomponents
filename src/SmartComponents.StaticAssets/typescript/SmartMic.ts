@@ -18,6 +18,8 @@ declare global {
     interface Window {
         SpeechRecognition: any;
         webkitSpeechRecognition: any;
+        mozSpeechRecognition: any;
+        msSpeechRecognition: any;
     }
 }
 
@@ -72,6 +74,7 @@ async function openSmartMicDialog(button: HTMLButtonElement) {
         startListening(dialog, button, form, formConfig);
     }
 }
+
 
 /**
  * Creates the Smart Mic dialog element
@@ -178,15 +181,33 @@ function setupDialogAccessibility(container: HTMLElement): void {
 /**
  * Checks if Speech Recognition API is available
  */
+/**
+ * Gets the browser-specific Speech Recognition constructor
+ */
+function getSpeechRecognitionConstructor(): any {
+    return (window as any).SpeechRecognition ||
+        (window as any).webkitSpeechRecognition ||
+        (window as any).mozSpeechRecognition ||
+        (window as any).msSpeechRecognition;
+}
+
+/**
+ * Checks if Speech Recognition API is available
+ */
 function isSpeechRecognitionAvailable(): boolean {
-    return !!(window.SpeechRecognition || (window as any).webkitSpeechRecognition);
+    const SpeechRecognition = getSpeechRecognitionConstructor();
+    return !!SpeechRecognition && typeof SpeechRecognition === 'function';
 }
 
 /**
  * Starts listening to user speech
  */
 function startListening(container: HTMLElement, button: HTMLButtonElement, form: HTMLFormElement, formConfig: any[]): void {
-    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition = getSpeechRecognitionConstructor();
+    if (!SpeechRecognition) {
+        showError(container, 'Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.');
+        return;
+    }
     const recognition = new SpeechRecognition();
 
     // Configuration
