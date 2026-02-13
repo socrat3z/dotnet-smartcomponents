@@ -5,6 +5,15 @@
         <Description>Experimental, end-to-end AI features for .NET apps. Docs and info at https://github.com/dotnet/smartcomponents</Description>
         <PackageTags>ai;aspnetcore;blazor;mvc;razor;autocomplete;paste;typeahead;smartcomponents;embedding;</PackageTags>
         <PackageProjectUrl>https://github.com/dotnet/smartcomponents</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/dotnet/smartcomponents</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
         <VersionPrefix>0.2.0</VersionPrefix>
         <VersionSuffix Condition="'$(BuildNumber)' == ''">dev</VersionSuffix>
@@ -12,9 +21,17 @@
         <PackageVersion>$(VersionPrefix)-$(VersionSuffix)</PackageVersion>
         <PackageOutputPath>$(MSBuildThisFileDirectory)artifacts\</PackageOutputPath>
         <IsPackable>false</IsPackable>
+        <WarnOnPackingNonPackableProject>false</WarnOnPackingNonPackableProject>
         <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
         <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
         <SharedSrcRoot>$(MSBuildThisFileDirectory)src\shared\</SharedSrcRoot>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <NoWarn>$(NoWarn);NU1901;NU1902;NU1903;NU1904</NoWarn>
+        <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
     </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="$(RepoRoot)README.md" Pack="true" PackagePath="\" />
+        <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+    </ItemGroup>
 </Project>

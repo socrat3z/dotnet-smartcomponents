@@ -1,0 +1,23 @@
+[tasks.build]
+description = "Build the whole solution"
+run = "dotnet build"
+
+[tasks.test]
+description = "Run all tests"
+run = "dotnet test"
+
+[tasks.run-blazor]
+description = "Run the example blazor app"
+run = "dotnet run --project samples/ExampleBlazorApp/ExampleBlazorApp.csproj"
+
+[tasks.run-mvc]
+description = "Run the example MVC app"
+run = "dotnet run --project samples/ExampleMvcRazorPagesApp/ExampleMvcRazorPagesApp.csproj"
+
+[tasks.clean]
+description = "Clean the solution"
+run = "dotnet clean"
+
+[tasks.pack]
+description = "Pack the solution into NuGet packages"
+run = "dotnet pack -c Release"

@@ -7,14 +7,32 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using SmartComponents.Inference;
+using SmartComponents.Abstractions;
 
 namespace Microsoft.AspNetCore.Builder;
 
+/// <summary>
+/// Extension methods for mapping smart combo box endpoints.
+/// </summary>
 public static class SmartComboBoxEndpointRouteBuilderExtensions
 {
+    /// <summary>
+    /// Maps a smart combo box endpoint.
+    /// </summary>
+    /// <param name="builder">The endpoint route builder.</param>
+    /// <param name="url">The URL for the endpoint.</param>
+    /// <param name="suggestions">A function that returns suggestions based on the request.</param>
+    /// <returns>The endpoint route builder.</returns>
     public static IEndpointRouteBuilder MapSmartComboBox(this IEndpointRouteBuilder builder, string url, Func<SmartComboBoxRequest, IEnumerable<string>> suggestions)
         => MapSmartComboBoxCore(builder, url, req => Task.FromResult(suggestions(req)));
 
+    /// <summary>
+    /// Maps a smart combo box endpoint asynchronously.
+    /// </summary>
+    /// <param name="builder">The endpoint route builder.</param>
+    /// <param name="url">The URL for the endpoint.</param>
+    /// <param name="suggestions">A function that returns suggestions asynchronously based on the request.</param>
+    /// <returns>The endpoint route builder.</returns>
     public static IEndpointRouteBuilder MapSmartComboBox(this IEndpointRouteBuilder builder, string url, Func<SmartComboBoxRequest, Task<IEnumerable<string>>> suggestions)
         => MapSmartComboBoxCore(builder, url, req => suggestions(req));
 
@@ -31,7 +49,6 @@ public static class SmartComboBoxEndpointRouteBuilderExtensions
                 await antiforgery.ValidateRequestAsync(httpContext);
             }
 
-            // Can't use [FromForm] on net6.0
             var form = httpContext.Request.Form;
             if (!(form.TryGetValue("inputValue", out var inputValue) && !string.IsNullOrEmpty(inputValue))
                 || !(form.TryGetValue("maxResults", out var maxResultsString) && int.TryParse(maxResultsString, NumberStyles.Integer, CultureInfo.InvariantCulture, out var maxResults))
@@ -59,9 +76,7 @@ public static class SmartComboBoxEndpointRouteBuilderExtensions
             return Results.Ok(suggestionsList);
         });
 
-#if NET8_0_OR_GREATER
         endpoint.DisableAntiforgery();
-#endif
 
         return builder;
     }

@@ -12,18 +12,34 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace SmartComponents.AspNetCore;
 
+/// <summary>
+/// A Tag Helper that renders a smart combo box.
+/// </summary>
 [HtmlTargetElement("smart-combobox", TagStructure = TagStructure.WithoutEndTag)]
 public class SmartComboBoxTagHelper : TagHelper
 {
+    /// <summary>
+    /// Gets or sets the view context.
+    /// </summary>
     [ViewContext]
     public ViewContext ViewContext { get; set; } = default!;
 
+    /// <summary>
+    /// Gets or sets the URL for fetching suggestions.
+    /// </summary>
     public string Url { get; set; } = default!;
 
+    /// <summary>
+    /// Gets or sets the maximum number of suggestions to display.
+    /// </summary>
     public int MaxSuggestions { get; set; } = 10;
 
+    /// <summary>
+    /// Gets or sets the similarity threshold for suggestions.
+    /// </summary>
     public float SimilarityThreshold { get; set; } = 0.5f;
 
+    /// <inheritdoc />
     public override Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
     {
         // This is better than specifying attributes on [HtmlTargetElement] because

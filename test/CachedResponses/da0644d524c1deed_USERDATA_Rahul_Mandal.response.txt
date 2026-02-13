@@ -1,5 +1,0 @@
-{
-  "firstname": "Rahul",
-  "lastname": "Mandal",
-  "unrelated": null
-}

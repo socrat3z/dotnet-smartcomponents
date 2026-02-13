@@ -1,8 +1,8 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
-using SmartComponents.Inference.OpenAI;
-using SmartComponents.LocalEmbeddings;
+using Microsoft.Extensions.AI;
+using OpenAI;
+using SmartComponents.Inference;
+using System.Linq;
+using System.Numerics.Tensors;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddRepoSharedConfig();
@@ -11,10 +11,18 @@ builder.Configuration.AddRepoSharedConfig();
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 builder.Services.AddSmartComponents()
-    .WithInferenceBackend<OpenAIInferenceBackend>()
     .WithAntiforgeryValidation();
 
-builder.Services.AddSingleton<LocalEmbedder>();
+// Note: the StartupKey value is just there so the app will start up. 
+builder.Services.AddSingleton(new OpenAIClient(builder.Configuration["AI:OpenAI:Key"] ?? "StartupKey"));
+builder.Services.AddChatClient(services =>
+{
+    var chatClient = new SmartComponentsChatClient(services.GetRequiredService<OpenAIClient>()
+        .GetChatClient(builder.Configuration["AI:OpenAI:Chat:ModelId"] ?? "gpt-4o-mini").AsIChatClient());
+    return chatClient;
+});
+builder.Services.AddEmbeddingGenerator(services =>
+    services.GetRequiredService<OpenAIClient>().GetEmbeddingClient(builder.Configuration["AI:OpenAI:Embedding:ModelId"] ?? "text-embedding-3-small").AsIEmbeddingGenerator());
 
 var app = builder.Build();
 
@@ -40,11 +48,42 @@ app.MapControllerRoute(
 app.MapRazorPages();
 
 // Prepare a list of expense categories and corresponding embeddings
-var embedder = app.Services.GetRequiredService<LocalEmbedder>();
-var expenseCategories = embedder.EmbedRange(
+var generator = app.Services.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>();
+var expenseCategories = await GenerateEmbeddingsAsync(generator,
     ["Groceries", "Utilities", "Rent", "Mortgage", "Car Payment", "Car Insurance", "Health Insurance", "Life Insurance", "Home Insurance", "Gas", "Public Transportation", "Dining Out", "Entertainment", "Travel", "Clothing", "Electronics", "Home Improvement", "Gifts", "Charity", "Education", "Childcare", "Pet Care", "Other"]);
 
 app.MapSmartComboBox("/api/suggestions/accounting-categories",
-    request => embedder.FindClosest(request.Query, expenseCategories));
+    async (SmartComboBoxRequest request) =>
+    {
+        var query = request.Query.SearchText;
+        if (string.IsNullOrWhiteSpace(query)) return Array.Empty<string>();
+        var queryEmbedding = (await generator.GenerateAsync(query));
+        return FindClosest(queryEmbedding.Vector, expenseCategories);
+    });
 
 app.Run();
+
+static async Task<(string Item, ReadOnlyMemory<float> Vector)[]> GenerateEmbeddingsAsync(IEmbeddingGenerator<string, Embedding<float>> generator, string[] items)
+{
+    try 
+    {
+        var embeddings = await generator.GenerateAsync(items);
+        return items.Zip(embeddings, (item, embedding) => (item, embedding.Vector)).ToArray();  
+    }
+    catch (Exception)
+    {
+        return [];
+    }
+}
+
+static string[] FindClosest(ReadOnlyMemory<float> queryVector, (string Item, ReadOnlyMemory<float> Vector)[] candidates)
+{
+    if (candidates.Length == 0) return [];
+    
+    return candidates
+        .Select(c => (c.Item, Similarity: TensorPrimitives.CosineSimilarity(c.Vector.Span, queryVector.Span)))
+        .OrderByDescending(x => x.Similarity)
+        .Take(5)
+        .Select(x => x.Item)
+        .ToArray();
+}

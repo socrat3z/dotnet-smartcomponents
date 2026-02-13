@@ -8,20 +8,33 @@ using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using Microsoft.Extensions.DependencyInjection;
-using SmartComponents.Infrastructure;
+using SmartComponents.Abstractions;
 
 namespace SmartComponents.AspNetCore;
 
+/// <summary>
+/// A Tag Helper that enhances a text area with smart completion capabilities.
+/// </summary>
 [HtmlTargetElement("smart-textarea", TagStructure = TagStructure.NormalOrSelfClosing)]
 public class SmartTextAreaTagHelper : TagHelper
 {
+    /// <summary>
+    /// Gets or sets the view context.
+    /// </summary>
     [ViewContext]
     public ViewContext ViewContext { get; set; } = default!;
 
+    /// <summary>
+    /// Gets or sets the user role for the context of the text area.
+    /// </summary>
     public string UserRole { get; set; } = default!;
 
+    /// <summary>
+    /// Gets or sets optional phrases to guide the completion suggestions.
+    /// </summary>
     public string[]? UserPhrases { get; set; }
 
+    /// <inheritdoc />
     public override void Process(TagHelperContext context, TagHelperOutput output)
     {
         // It just doesn't make sense to use this component without providing some information about

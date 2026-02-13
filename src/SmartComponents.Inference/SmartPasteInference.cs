@@ -7,81 +7,91 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using SmartComponents.StaticAssets.Inference;
+using Microsoft.Extensions.AI;
+using SmartComponents.Abstractions;
 
 namespace SmartComponents.Inference;
 
-public class SmartPasteInference
+/// <summary>
+/// Default implementation of <see cref="ISmartPasteInference"/>.
+/// </summary>
+public class SmartPasteInference : ISmartPasteInference
 {
-    private static readonly JsonSerializerOptions jsonSerializerOptions
-        = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions jsonSerializerOptions = new(JsonSerializerDefaults.Web);
 
-    public class SmartPasteRequestData
+    /// <summary>
+    /// Gets form completions asynchronously based on the provided request data in JSON format.
+    /// </summary>
+    /// <param name="inferenceBackend">The chat client to use for inference.</param>
+    /// <param name="dataJson">The data containing form fields and clipboard contents in JSON format.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the smart paste response data.</returns>
+    public Task<SmartPasteResponseData> GetFormCompletionsAsync(IChatClient inferenceBackend, string dataJson)
+        => GetFormCompletionsAsync(inferenceBackend, JsonSerializer.Deserialize<SmartPasteRequestData>(dataJson, jsonSerializerOptions)!);
+
+    private readonly IPromptTemplateProvider _promptProvider;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SmartPasteInference"/> class.
+    /// </summary>
+    public SmartPasteInference() : this(new EmbeddedResourcePromptTemplateProvider())
     {
-        public FormField[]? FormFields { get; set; }
-        public string? ClipboardContents { get; set; }
     }
 
-    public class FormField
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SmartPasteInference"/> class with a custom prompt provider.
+    /// </summary>
+    /// <param name="promptProvider">The prompt provider.</param>
+    public SmartPasteInference(IPromptTemplateProvider promptProvider)
     {
-        public string? Identifier { get; set; }
-        public string? Description { get; set; }
-        public string?[]? AllowedValues { get; set; }
-        public string? Type { get; set; }
+        _promptProvider = promptProvider;
     }
 
-    public readonly struct SmartPasteResponseData
-    {
-        public bool BadRequest { get; init; }
-        public string? Response { get; init; }
-    }
-
-    public Task<SmartPasteResponseData> GetFormCompletionsAsync(IInferenceBackend inferenceBackend, string dataJson)
-    {
-        var data = JsonSerializer.Deserialize<SmartPasteRequestData>(dataJson, jsonSerializerOptions)!;
-        if (data.FormFields is null || data.FormFields.Length == 0 || string.IsNullOrEmpty(data.ClipboardContents))
-        {
-            return Task.FromResult(new SmartPasteResponseData { BadRequest = true });
-        }
-
-        return GetFormCompletionsAsync(inferenceBackend, data);
-    }
-
+    /// <summary>
+    /// Builds the chat parameters (prompt) for the smart paste request.
+    /// </summary>
+    /// <param name="data">The data containing form fields and clipboard contents.</param>
+    /// <returns>The chat parameters.</returns>
     public virtual ChatParameters BuildPrompt(SmartPasteRequestData data)
     {
-        var systemMessage = @$"
-Current date: {DateTime.Today.ToString("D", CultureInfo.InvariantCulture)}
+        var systemTemplate = _promptProvider.GetTemplate("SmartPaste.System");
+        var userTemplate = _promptProvider.GetTemplate("SmartPaste.User");
 
-Respond with a JSON object with ONLY the following keys. For each key, infer a value from USER_DATA:
+        var systemMessage = systemTemplate
+            .Replace("{current_date}", DateTime.Today.ToString("D", CultureInfo.InvariantCulture))
+            .Replace("{field_output_examples}", ToFieldOutputExamples(data.FormFields!));
 
-{ToFieldOutputExamples(data.FormFields!)}
-
-Do not explain how the values were determined.
-For fields without any corresponding information in USER_DATA, use the value null.";
-
-        var prompt = @$"
-USER_DATA: {data.ClipboardContents}
-";
+        var prompt = userTemplate
+            .Replace("{user_data}", data.ClipboardContents);
 
         return new ChatParameters
         {
             Messages = [
-                new (ChatMessageRole.System, systemMessage),
-                new (ChatMessageRole.User, prompt),
+                new (ChatRole.System, systemMessage),
+                new (ChatRole.User, prompt),
             ],
-            Temperature = 0,
-            TopP = 1,
-            MaxTokens = 2000,
-            FrequencyPenalty = 0.1f,
-            PresencePenalty = 0,
-            RespondJson = true,
+            Options = new ChatOptions
+            {
+                Temperature = 0,
+                TopP = 1,
+                MaxOutputTokens = 2000,
+                FrequencyPenalty = 0.1f,
+                PresencePenalty = 0,
+                ResponseFormat = ChatResponseFormat.Json,
+            },
         };
     }
 
-    public virtual async Task<SmartPasteResponseData> GetFormCompletionsAsync(IInferenceBackend inferenceBackend, SmartPasteRequestData requestData)
+    /// <inheritdoc />
+    public virtual async Task<SmartPasteResponseData> GetFormCompletionsAsync(IChatClient inferenceBackend, SmartPasteRequestData requestData)
     {
-        var chatOptions = BuildPrompt(requestData);
-        var completionsResponse = await inferenceBackend.GetChatResponseAsync(chatOptions);
-        return new SmartPasteResponseData { Response = completionsResponse };
+        if (requestData.FormFields is null || requestData.FormFields.Length == 0 || string.IsNullOrEmpty(requestData.ClipboardContents))
+        {
+            return new SmartPasteResponseData { BadRequest = true };
+        }
+
+        var chatParameters = BuildPrompt(requestData);
+        var completionsResponse = await inferenceBackend.GetResponseAsync(chatParameters.Messages, chatParameters.Options);
+        return new SmartPasteResponseData { Response = completionsResponse.Text };
     }
 
     private static string ToFieldOutputExamples(FormField[] fields)

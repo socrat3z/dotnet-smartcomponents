@@ -12,14 +12,24 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace SmartComponents.AspNetCore;
 
+/// <summary>
+/// A Tag Helper that renders a smart paste button.
+/// </summary>
 [HtmlTargetElement("smart-paste-button", TagStructure = TagStructure.NormalOrSelfClosing)]
 public class SmartPasteButtonTagHelper : TagHelper
 {
+    /// <summary>
+    /// Gets or sets the view context.
+    /// </summary>
     [ViewContext]
     public ViewContext ViewContext { get; set; } = default!;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether to use the default icon.
+    /// </summary>
     public bool DefaultIcon { get; set; }
 
+    /// <inheritdoc />
     public override async Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
     {
         output.TagName = "button";
