@@ -32,6 +32,7 @@ public static class SmartComponentsServiceCollectionExtensions
         // own implementations if they want to override the prompts or the calls to the backend.
         services.TryAddScoped<ISmartTextAreaInference, SmartTextAreaInference>();
         services.TryAddScoped<ISmartPasteInference, SmartPasteInference>();
+        services.TryAddScoped<ISmartTranslateInference, SmartTranslateInference>();
 
         services.AddTransient<IStartupFilter, AttachSmartComponentsEndpointsStartupFilter>();
         services.AddTransient<ITagHelperComponent, SmartComponentsScriptTagHelperComponent>();
@@ -90,9 +91,27 @@ public static class SmartComponentsServiceCollectionExtensions
                     return Results.Content(suggestion);
                 });
 
+                var smartTranslateEndpoint = app.MapPost("/_smartcomponents/smarttranslate", async ([FromServices] IChatClient inference, HttpContext httpContext, [FromServices] IAntiforgery antiforgery, [FromServices] ISmartTranslateInference smartTranslateInference) =>
+                {
+                    if (validateAntiforgery)
+                    {
+                        await antiforgery.ValidateRequestAsync(httpContext);
+                    }
+
+                    if (!httpContext.Request.Form.TryGetValue("dataJson", out var dataJson))
+                    {
+                        return Results.BadRequest("dataJson is required");
+                    }
+
+                    var requestData = JsonSerializer.Deserialize<SmartTranslateRequestData>(dataJson.ToString(), new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+                    var result = await smartTranslateInference.TranslateAsync(inference, requestData);
+                    return result.BadRequest ? Results.BadRequest() : Results.Json(result); 
+                });
+
                 // These APIs only exist on .NET 8+. It wasn't enabled by default in prior versions.
                 smartPasteEndpoint.DisableAntiforgery();
                 smartTextAreaEndpoint.DisableAntiforgery();
+                smartTranslateEndpoint.DisableAntiforgery();
             });
         };
     }
