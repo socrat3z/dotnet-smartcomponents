@@ -1,0 +1,213 @@
+@namespace SmartComponents
+@using SmartComponents.Abstractions
+@inherits SmartComponentBase
+@inject IServiceProvider Services
+
+<div class="smart-translate" @attributes="AdditionalAttributes">
+    <div class="smart-translate-trigger" @onclick="TogglePopover">
+        @if (ChildContent != null)
+        {
+            @ChildContent
+        }
+        else
+        {
+            <span class="smart-translate-icon" title="Translate">🌐</span>
+        }
+    </div>
+
+    @if (_showPopover)
+    {
+        <dialog @ref="_dialogRef" class="smart-translate-dialog">
+            <div class="smart-translate-header">
+                <span class="smart-translate-title">Smart Translate</span>
+                <button class="smart-translate-close" @onclick="ClosePopover">×</button>
+            </div>
+            
+            <div class="smart-translate-body">
+                @if (IsLoading)
+                {
+                    <div class="smart-translate-loading">Translating...</div>
+                }
+                else if (HasError)
+                {
+                    <div class="smart-translate-error">@ErrorMessage</div>
+                }
+                else if (!string.IsNullOrEmpty(_draftText))
+                {
+                    <div class="smart-translate-diff">
+                        <!-- Simplified Diff View: Original (strikethrough) -> New (highlight) -->
+                        <div class="smart-translate-original">
+                            <del>@_originalText</del>
+                        </div>
+                        <div class="smart-translate-new">
+                            <ins>@_draftText</ins>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="smart-translate-empty">Select text to translate.</div>
+                }
+
+                @if (!string.IsNullOrEmpty(_draftText))
+                {
+                    <div class="smart-translate-refine">
+                        <textarea @bind="_userInstructions" placeholder="Make it more formal..."></textarea>
+                        <button class="smart-translate-btn smart-translate-btn-secondary" @onclick="RefineTranslation" disabled="@_isRefiningDisabled">Refine</button>
+                    </div>
+                }
+            </div>
+
+            <div class="smart-translate-footer">
+                @if (!string.IsNullOrEmpty(_draftText))
+                {
+                     <button class="smart-translate-btn smart-translate-btn-primary" @onclick="ReplaceText">Replace</button>
+                }
+            </div>
+        </dialog>
+    }
+</div>
+
+<smart-translate
+    data-url="_smartcomponents/smarttranslate"
+    data-antiforgery-name="@antiforgeryToken?.FormFieldName"
+    data-antiforgery-value="@antiforgeryToken?.Value"></smart-translate>
+
+@inject IJSRuntime JS
+@inject ISmartTranslateInference InferenceService
+@inject IChatClient ChatClient
+
+@code {
+    ConditionalAntiforgery antiforgeryToken = default!;
+    
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    [Parameter] public string TargetId { get; set; } = string.Empty;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public Dictionary<string, string>? Glossary { get; set; }
+
+    private ElementReference _dialogRef;
+    private bool _showPopover;
+    private bool _shouldShowModal;
+
+    private string? _originalText;
+    private string? _draftText;
+    private string? _userInstructions;
+    private string? _previousTranslation;
+    private int _refinementCount;
+    private const int MaxRefinements = 3;
+
+    private bool _isRefiningDisabled => IsLoading || _refinementCount >= MaxRefinements;
+
+    protected override void OnInitialized()
+    {
+        antiforgeryToken = new ConditionalAntiforgery(Services);
+    }
+
+    private async Task TogglePopover()
+    {
+        _showPopover = !_showPopover;
+        if (_showPopover)
+        {
+            _shouldShowModal = true;
+            await LoadOriginalText();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_shouldShowModal && _showPopover)
+        {
+            _shouldShowModal = false;
+            await JS.InvokeVoidAsync("SmartTranslate.showModal", _dialogRef);
+        }
+    }
+
+
+    private void ClosePopover()
+    {
+        _showPopover = false;
+        _draftText = null;
+        _refinementCount = 0;
+        _previousTranslation = null;
+        _userInstructions = null;
+    }
+
+    private async Task LoadOriginalText()
+    {
+        if (string.IsNullOrEmpty(TargetId)) return;
+        
+        try 
+        {
+            _originalText = await JS.InvokeAsync<string>("SmartTranslate.getText", TargetId);
+            if (!string.IsNullOrWhiteSpace(_originalText))
+            {
+                await Translate();
+            }
+            else
+            {
+                 // Handle empty text?
+            }
+        }
+        catch (Exception ex)
+        {
+             // Handle JS error (e.g. function not found if script not loaded)
+             Console.WriteLine($"JS Error: {ex.Message}");
+        }
+    }
+    
+    private async Task Translate()
+    {
+        if (string.IsNullOrWhiteSpace(_originalText)) return;
+
+        await TriggerInferenceAsync(async (token) =>
+        {
+             var request = new SmartTranslateRequestData
+             {
+                 OriginalText = _originalText,
+                 // TODO: Where do we get TargetLanguage? 
+                 // It wasn't in the Parameters. Product Scope said "Auto-detect".
+                 // Wait, "The source language is auto-detected".
+                 // The TARGET language? "Input: targetLanguage".
+                 // "Users can manually edit...".
+                 // Where does the user specify Target Language?
+                 // Design doc says: "Component Vision ... turn form into Multilingual".
+                 // Usually the APP knows the target language (current culture).
+                 // Ah, "Turn any form into a multilingual form".
+                 // Maybe it translates TO the user's language? Or TO English?
+                 // "Smart Translate ... allows developers to build apps that are globally ready".
+                 // If I am an English speaker, I see a French form, I want to translate it to English.
+                 // So TargetLanguage should probably be the Current Culture/UI Culture.
+                 // Or a configurable parameter.
+                 
+                 TargetLanguage = System.Globalization.CultureInfo.CurrentUICulture.Name, // Default to current UI culture
+                 UserInstructions = _userInstructions,
+                 Glossary = Glossary,
+                 PreviousTranslation = _previousTranslation
+             };
+
+             var result = await InferenceService.TranslateAsync(ChatClient, request);
+             if (result.TranslatedText is not null)
+             {
+                 _draftText = result.TranslatedText;
+             }
+        });
+    }
+
+    private async Task RefineTranslation()
+    {
+        if (_refinementCount >= MaxRefinements) return;
+        _refinementCount++;
+        _previousTranslation = _draftText;
+        await Translate();
+    }
+
+    private async Task ReplaceText()
+    {
+        if (string.IsNullOrEmpty(TargetId) || string.IsNullOrEmpty(_draftText)) return;
+        
+        await JS.InvokeVoidAsync("SmartTranslate.replaceText", TargetId, _draftText);
+        ClosePopover();
+    }
+}

@@ -51,7 +51,7 @@ public class SmartMicButtonTagHelper : TagHelper
 
         if (!output.Attributes.ContainsName("class"))
         {
-            output.AddClass("smart-paste-button", HtmlEncoder.Default);
+            output.AddClass("smart-mic-button", HtmlEncoder.Default);
         }
 
         if (DefaultIcon)

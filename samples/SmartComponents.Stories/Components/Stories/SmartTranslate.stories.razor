@@ -1,0 +1,35 @@
+@attribute [Stories("Smart Components/SmartTranslate")]
+@using SmartComponents.AspNetCore.Components
+
+<Stories TComponent="SmartTranslate">
+    <Story Name="Default">
+        <Template>
+            <div style="padding: 20px;">
+                <h3>Smart Translate Demo</h3>
+                <p>Select text below or translate the whole block:</p>
+                <div id="translate-target-1" contenteditable="true" style="border: 1px solid #ccc; padding: 10px; min-height: 100px;">
+                    This is a sample text for translation. You can edit this text or select a part of it to translate specifically that part. The Smart Translate component will detect the selection automatically.
+                </div>
+                
+                <div style="margin-top: 10px;">
+                    <SmartTranslate TargetId="translate-target-1" />
+                </div>
+            </div>
+        </Template>
+    </Story>
+
+    <Story Name="With TextArea">
+        <Template>
+            <div style="padding: 20px;">
+                <h3>TextArea Example</h3>
+                <textarea id="translate-target-2" style="width: 100%; height: 100px; padding: 10px;">
+                    Translating form inputs is also supported. This text is inside a standard HTML textarea element.
+                </textarea>
+                
+                <div style="margin-top: 10px;">
+                    <SmartTranslate TargetId="translate-target-2" />
+                </div>
+            </div>
+        </Template>
+    </Story>
+</Stories>

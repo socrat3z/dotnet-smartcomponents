@@ -1,0 +1,36 @@
+@attribute [Stories("Smart Components/SmartMicButton")]
+@using SmartComponents
+@using SmartComponents.AspNetCore.Components
+
+<Stories TComponent="SmartMicButton">
+    <Story Name="Default">
+        <Template>
+            <style>
+                .form-control {
+                    width: 100%;
+                    padding: 8px;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
+                    box-sizing: border-box;
+                }
+                label {
+                    display: block;
+                    margin-bottom: 5px;
+                    font-weight: 500;
+                }
+            </style>
+            <form style="padding: 20px; max-width: 500px; border: 1px solid #eee; border-radius: 8px; font-family: sans-serif;">
+                <h3>Voice Form Filling</h3>
+                <div style="margin-bottom: 15px;">
+                    <label for="task-desc">Task Description:</label>
+                    <textarea id="task-desc" class="form-control" rows="3" placeholder="Describe what you want to do..."></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <SmartMicButton DefaultIcon="true" style="padding: 5px 10px; background: #d83b01; color: white; border: none; border-radius: 4px; cursor: pointer;" />
+                    <span style="font-size: 0.8em; color: #666;">(Click and speak your task)</span>
+                </div>
+            </form>
+        </Template>
+    </Story>
+</Stories>

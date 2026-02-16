@@ -1,0 +1,44 @@
+@attribute [Stories("Smart Components/SmartPasteButton")]
+@using SmartComponents
+@using SmartComponents.AspNetCore.Components
+
+<Stories TComponent="SmartPasteButton">
+    <Story Name="Default">
+        <Template>
+            <style>
+                .form-control {
+                    width: 100%;
+                    padding: 8px;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
+                    box-sizing: border-box; 
+                }
+                label {
+                    display: block;
+                    margin-bottom: 5px;
+                    font-weight: 500;
+                }
+            </style>
+            <form style="padding: 20px; max-width: 500px; border: 1px solid #eee; border-radius: 8px; font-family: sans-serif;">
+                <h3>User Profile</h3>
+                <div style="margin-bottom: 10px;">
+                    <label for="first-name">First Name:</label>
+                    <input type="text" id="first-name" class="form-control" />
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label for="last-name">Last Name:</label>
+                    <input type="text" id="last-name" class="form-control" />
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label for="bio">Bio:</label>
+                    <textarea id="bio" class="form-control" rows="3"></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <SmartPasteButton DefaultIcon="true" style="padding: 5px 10px; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer;" />
+                    <span style="font-size: 0.8em; color: #666;">(Paste a bio or LinkedIn snippet)</span>
+                </div>
+            </form>
+        </Template>
+    </Story>
+</Stories>

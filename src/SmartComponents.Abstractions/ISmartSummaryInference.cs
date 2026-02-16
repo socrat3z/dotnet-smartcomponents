@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Microsoft.Extensions.AI;
+using System.Threading;
 
 namespace SmartComponents.Abstractions;
 
@@ -13,6 +14,7 @@ public interface ISmartSummaryInference
     /// </summary>
     /// <param name="chatClient">The chat client to use for inference.</param>
     /// <param name="requestData">The data containing the text and summarization preferences.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>An async enumerable of strings representing the streamed summary chunks.</returns>
-    IAsyncEnumerable<string> SummarizeStreamingAsync(IChatClient chatClient, SmartSummaryRequestData requestData);
+    IAsyncEnumerable<string> SummarizeStreamingAsync(IChatClient chatClient, SmartSummaryRequestData requestData, CancellationToken cancellationToken = default);
 }

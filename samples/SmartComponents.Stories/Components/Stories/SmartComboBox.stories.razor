@@ -1,0 +1,21 @@
+@attribute [Stories("Smart Components/SmartComboBox")]
+@using SmartComponents
+@using SmartComponents.AspNetCore.Components
+
+<Stories TComponent="SmartComboBox">
+    <Story Name="Sample Suggestions">
+        <Template>
+            <div style="padding: 20px; max-width: 400px;">
+                <SmartComboBox Url="/api/suggestions/sample" 
+                               Value="Apple"
+                               ValueChanged="@((s) => {})"
+                               ValueExpression="@(() => _model.Fruit)" />
+            </div>
+        </Template>
+    </Story>
+</Stories>
+
+@code {
+    private SampleModel _model = new();
+    public class SampleModel { public string? Fruit { get; set; } }
+}

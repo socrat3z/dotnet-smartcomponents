@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>False</GenerateDocumentationFile>
+    <MD2RazorDefaultBaseClass>global::BlazingStory.Internals.Pages.MarkdownPageBase</MD2RazorDefaultBaseClass>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BlazingStory" />
+    <PackageReference Include="MD2RazorGenerator">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\SmartComponents.AspNetCore.Components\SmartComponents.AspNetCore.Components.csproj" />
+    <ProjectReference Include="..\..\src\SmartComponents.AspNetCore\SmartComponents.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\SmartComponents.Abstractions\SmartComponents.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\SmartComponents.Inference\SmartComponents.Inference.csproj" />
+  </ItemGroup>
+
+</Project>

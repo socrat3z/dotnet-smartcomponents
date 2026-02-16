@@ -8,19 +8,30 @@ using SmartComponents.StaticAssets.Inference;
 
 namespace SmartComponents.Inference;
 
+/// <summary>
+/// Provides smart translation capabilities using an AI backend.
+/// </summary>
 public class SmartTranslateInference : ISmartTranslateInference
 {
     private readonly IPromptTemplateProvider _promptProvider;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SmartTranslateInference"/> class.
+    /// </summary>
     public SmartTranslateInference() : this(new EmbeddedResourcePromptTemplateProvider())
     {
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SmartTranslateInference"/> class with a custom prompt provider.
+    /// </summary>
+    /// <param name="promptProvider">The prompt provider.</param>
     public SmartTranslateInference(IPromptTemplateProvider promptProvider)
     {
         _promptProvider = promptProvider;
     }
 
+    /// <inheritdoc />
     public async Task<SmartTranslateResponseData> TranslateAsync(IChatClient chatClient, SmartTranslateRequestData requestData)
     {
         if (string.IsNullOrWhiteSpace(requestData.OriginalText) || string.IsNullOrWhiteSpace(requestData.TargetLanguage))
@@ -34,6 +45,11 @@ public class SmartTranslateInference : ISmartTranslateInference
         return new SmartTranslateResponseData { TranslatedText = response.Text };
     }
 
+    /// <summary>
+    /// Builds the chat parameters (prompt) for the smart translate request.
+    /// </summary>
+    /// <param name="data">The translation request data.</param>
+    /// <returns>The chat parameters.</returns>
     public ChatParameters BuildPrompt(SmartTranslateRequestData data)
     {
         var systemTemplate = _promptProvider.GetTemplate("SmartTranslate.System");

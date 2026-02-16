@@ -1,0 +1,94 @@
+@namespace SmartComponents
+@using SmartComponents.Abstractions
+@inherits SmartComponentBase
+@inject IServiceProvider Services
+@inject IJSRuntime JS
+@inject ISmartImageInference InferenceService
+@inject IChatClient ChatClient
+
+<div class="smart-image" @attributes="AdditionalAttributes" style="@(_focalPointStyle)">
+    @if (ChildContent != null)
+    {
+        @ChildContent
+    }
+    else if (!string.IsNullOrEmpty(Src))
+    {
+         <img src="@Src" alt="@_altText" class="smart-image-img" />
+    }
+
+    @if (IsLoading)
+    {
+        <div class="smart-image-loading-overlay">Analyzing...</div>
+    }
+</div>
+
+<smart-image
+    data-url="_smartcomponents/smartimage"
+    data-antiforgery-name="@antiforgeryToken?.FormFieldName"
+    data-antiforgery-value="@antiforgeryToken?.Value"></smart-image>
+
+@code {
+    ConditionalAntiforgery antiforgeryToken = default!;
+    
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    [Parameter] public string? Src { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public bool AnalyzeOnLoad { get; set; } = true;
+    [Parameter] public bool EnableFocalPoint { get; set; } = true;
+
+    private string? _altText;
+    private SmartImageFocalPoint? _focalPoint;
+    private string _focalPointStyle => _focalPoint != null && EnableFocalPoint
+        ? $"--smart-image-x: {_focalPoint.X * 100}%; --smart-image-y: {_focalPoint.Y * 100}%; object-position: var(--smart-image-x) var(--smart-image-y);" 
+        : "";
+
+    protected override void OnInitialized()
+    {
+        antiforgeryToken = new ConditionalAntiforgery(Services);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && AnalyzeOnLoad && !string.IsNullOrEmpty(Src))
+        {
+            await AnalyzeImage();
+        }
+    }
+
+    public async Task AnalyzeImage()
+    {
+        if (string.IsNullOrEmpty(Src)) return;
+
+        await TriggerInferenceAsync(async (token) =>
+        {
+             var request = new SmartImageRequestData
+             {
+                 ImageUrl = Src,
+                 // If Src is not URL but local path, we might need Base64.
+                 // For now assume public URL or handle fetch on client side.
+                 // But wait, if we are server side, we can't easily fetch relative URLs unless we know the domain.
+                 // Product Scope: "Enhances ... <img> tags".
+                 // "Smart Image stores cache...".
+             };
+
+             var result = await InferenceService.AnalyzeImageAsync(ChatClient, request);
+             
+             if (result != null)
+             {
+                 if (result.IsSafe)
+                 {
+                     _altText = result.AltText;
+                     _focalPoint = result.FocalPoint;
+                     StateHasChanged();
+                 }
+                 else
+                 {
+                     // Unsafe content handling
+                     _altText = "Content restricted.";
+                 }
+             }
+        });
+    }
+}

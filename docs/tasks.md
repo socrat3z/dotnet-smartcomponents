@@ -22,50 +22,52 @@ This document tracks the implementation progress of the new Smart Components bas
     - [x] Parameter: `glossary`.
     - [x] Parameter: `userInstructions`.
     - [x] Parameter: `pageContext`.
-- [ ] Implement `SmartSummaryInference` service.
-    - [ ] Streaming support (`IAsyncEnumerable`).
-    - [ ] Output with source citations.
-- [ ] Register new services in DI.
+- [x] Implement `SmartSummaryInference` service.
+    - [x] Streaming support (`IAsyncEnumerable`).
+    - [x] Output with source citations.
+- [x] Register new services in DI.
     - [x] Register `SmartTranslateInference`.
+    - [x] Register `SmartSummaryInference` and map streaming endpoint.
+    - [x] Register `SmartImageInference` and map endpoint.
 
 ## Phase 2: Frontend Components — Translate & Summary
 
 ### 1. SmartTranslate Component
-- [ ] Create `SmartTranslate.razor`.
-    - [ ] Inherit from `SmartComponentBase`.
-    - [ ] Implement Popover UI.
-    - [ ] Show Visual Diff (strikethrough -> highlight).
-    - [ ] Implement Refinement Loop (max 3 rounds).
-    - [ ] Implement Glossary injection.
-- [ ] Create `SmartTranslate.ts` (JS Interop).
-    - [ ] Selection handling.
-    - [ ] Replace text logic.
+- [x] Create `SmartTranslate.razor`.
+    - [x] Inherit from `SmartComponentBase`.
+    - [x] Implement Popover UI.
+    - [x] Show Visual Diff (strikethrough -> highlight).
+    - [x] Implement Refinement Loop (max 3 rounds).
+    - [x] Implement Glossary injection.
+- [x] Create `SmartTranslate.ts` (JS Interop).
+    - [x] Selection handling.
+    - [x] Replace text logic.
 
 ### 2. SmartSummary Component
-- [ ] Create `SmartSummary.razor`.
-    - [ ] Inherit from `SmartComponentBase`.
-    - [ ] Collapsible Card mode.
-    - [ ] Inline Tooltip mode.
-    - [ ] Visualizing source citations.
-    - [ ] Streaming UI updates.
+- [x] Create `SmartSummary.razor`.
+    - [x] Inherit from `SmartComponentBase`.
+    - [x] Collapsible Card mode.
+    - [x] Inline Tooltip mode.
+    - [x] Visualizing source citations (Partial - Markdown only for now).
+    - [x] Streaming UI updates.
 
 ## Phase 3: Smart Image + Polish
 
 ### 1. SmartImage Inference
-- [ ] Implement `SmartImageInference` service.
-    - [ ] Vision model support (`ModelOverride`).
-    - [ ] Safe search / Content safety check.
-    - [ ] Focal point detection (Tier 2).
+- [x] Implement `SmartImageInference` service.
+    - [x] Vision model support (`ModelOverride`).
+    - [x] Safe search / Content safety check.
+    - [x] Focal point detection (Tier 2 - JSON structure).
 
 ### 2. SmartImage Component
-- [ ] Create `SmartImage.razor`.
-    - [ ] Inherit from `SmartComponentBase`.
-    - [ ] Tier 1 Focal Point detection (Browser API / WASM).
-    - [ ] CSS `object-position` logic.
-    - [ ] Fallback handling (`alt` text).
+- [x] Create `SmartImage.razor`.
+    - [x] Inherit from `SmartComponentBase`.
+    - [x] Tier 1 Focal Point detection (Browser API / WASM).
+    - [x] CSS `object-position` logic.
+    - [x] Fallback handling (`alt` text).
 
 ### 3. Optimization & Testing
-- [ ] Implement Caching for Image Inference.
+- [ ] Implement Caching for Image Inference (Currently simplified).
 - [ ] Add End-to-End Tests for all new components.
 - [ ] Verify Accessibility (WCAG 2.2 AA).
 - [ ] Add Documentation / Examples.

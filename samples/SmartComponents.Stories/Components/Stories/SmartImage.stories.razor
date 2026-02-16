@@ -1,0 +1,56 @@
+@attribute [Stories("Smart Components/SmartImage")]
+@using SmartComponents.AspNetCore.Components
+
+<Stories TComponent="SmartImage">
+    <Story Name="Default Analysis">
+        <Template>
+            <div style="padding: 20px;">
+                <h3>Image with Analysis (Alt Text & Focal Point)</h3>
+                <p>Loads an image and generates Alt Text. Focal point is applied if supported.</p>
+                <div class="smart-image-example">
+                     <!-- We need a real image URL for Mocks, mocks ignore it but component needs Src to render -->
+                     <SmartImage Src="https://picsum.photos/id/237/800/600" AnalyzeOnLoad="true" />
+                </div>
+            </div>
+        </Template>
+    </Story>
+    
+    <Story Name="Wide Container (Focal Point)">
+        <Template>
+            <div style="padding: 20px;">
+                <h3>Wide View</h3>
+                <div class="smart-image-wide-example" style="width: 100%; height: 200px; border: 2px solid #ccc; overflow: hidden; position: relative;">
+                     <SmartImage Src="https://picsum.photos/id/237/800/600" AnalyzeOnLoad="true" style="width: 100%; height: 100%; object-fit: cover;" />
+                </div>
+            </div>
+        </Template>
+    </Story>
+
+    <Story Name="Unsafe Image Handling">
+        <Template>
+             <div style="padding: 20px;">
+                <h3>Unsafe Image (Simulated Mock)</h3>
+                <p>Loads an image that is flagged as unsafe by the AI (mock needs updates to support this scenario or we rely on specific input).</p>
+                <!-- For now just showing normal image, mock returns Safe=true always unless configured otherwise -->
+                <SmartImage Src="https://picsum.photos/id/10/800/600" AnalyzeOnLoad="true" />
+             </div>
+        </Template>
+    </Story>
+</Stories>
+
+<style>
+    .smart-image-example img {
+        max-width: 100%;
+        height: auto;
+    }
+    
+    .smart-image-wide-example .smart-image {
+        width: 100%;
+        height: 100%;
+    }
+    .smart-image-wide-example .smart-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+</style>

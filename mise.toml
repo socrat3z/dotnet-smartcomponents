@@ -21,6 +21,14 @@ run = "dotnet run --project samples/ExampleBlazorApp/ExampleBlazorApp.csproj"
 description = "Run the example MVC app"
 run = "dotnet run --project samples/ExampleMvcRazorPagesApp/ExampleMvcRazorPagesApp.csproj"
 
+[tasks.run-stories]
+description = "Run the example Blazor Stories app (Mock Mode)"
+run = "dotnet run --project samples/SmartComponents.Stories/SmartComponents.Stories.csproj"
+
+[tasks.run-stories-real]
+description = "Run the example Blazor Stories app (Real LLM Mode using .env)"
+run = "dotnet run --project samples/SmartComponents.Stories/SmartComponents.Stories.csproj -- --use-real-llm"
+
 [tasks.clean]
 description = "Clean the solution"
 run = "dotnet clean"

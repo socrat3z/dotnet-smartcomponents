@@ -27,5 +27,8 @@
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="Moq" Version="4.20.72" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
+    <!-- Examples -->
+    <PackageVersion Include="BlazingStory" Version="1.0.0-preview.66" />
+    <PackageVersion Include="MD2RazorGenerator" Version="1.2.3" />
   </ItemGroup>
 </Project>

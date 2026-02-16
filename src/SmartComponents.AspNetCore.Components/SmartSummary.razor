@@ -1,0 +1,152 @@
+@namespace SmartComponents
+@using SmartComponents.Abstractions
+@inherits SmartComponentBase
+@inject IServiceProvider Services
+@inject IJSRuntime JS
+@inject ISmartSummaryInference InferenceService
+@inject IChatClient ChatClient
+
+<div class="smart-summary" @attributes="AdditionalAttributes">
+    @if (Mode == SmartSummaryMode.CollapsibleCard)
+    {
+        <div class="smart-summary-card">
+            <button class="smart-summary-toggle" @onclick="ToggleSummary">
+                @(IsSummaryVisible ? "Hide Summary" : "Show Summary")
+            </button>
+            
+            @if (IsSummaryVisible)
+            {
+                 <div class="smart-summary-content">
+                     @if (IsLoading && string.IsNullOrEmpty(_summaryText))
+                     {
+                         <div class="smart-summary-loading">Summarizing...</div>
+                     }
+                     else if (HasError)
+                     {
+                         <div class="smart-summary-error">@ErrorMessage</div>
+                     }
+                     
+                     @if (!string.IsNullOrEmpty(_summaryText))
+                     {
+                         <div class="smart-summary-text">
+                              @((MarkupString)RenderSummaryWithCitations(_summaryText))
+                         </div>
+                     }
+                 </div>
+            }
+        </div>
+    }
+    else if (Mode == SmartSummaryMode.InlineTooltip)
+    {
+        <div class="smart-summary-inline" @onmouseover="ShowTooltip" @onmouseout="HideTooltip">
+            @ChildContent
+            
+            @if (IsSummaryVisible && !string.IsNullOrEmpty(_summaryText))
+            {
+                <div class="smart-summary-tooltip">
+                    @_summaryText
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<smart-summary
+    data-url="_smartcomponents/smartsummary"
+    data-antiforgery-name="@antiforgeryToken?.FormFieldName"
+    data-antiforgery-value="@antiforgeryToken?.Value"></smart-summary>
+
+@code {
+    ConditionalAntiforgery antiforgeryToken = default!;
+    
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    [Parameter] public string Text { get; set; } = string.Empty;
+    [Parameter] public SmartSummaryMode Mode { get; set; } = SmartSummaryMode.CollapsibleCard;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public SummaryLengthPreference LengthPreference { get; set; } = SummaryLengthPreference.KeyPoints;
+
+    public bool IsSummaryVisible { get; private set; }
+    
+    private string? _summaryText;
+
+    protected override void OnInitialized()
+    {
+        antiforgeryToken = new ConditionalAntiforgery(Services);
+    }
+
+    private async Task ToggleSummary()
+    {
+        IsSummaryVisible = !IsSummaryVisible;
+        if (IsSummaryVisible && string.IsNullOrEmpty(_summaryText))
+        {
+            await GenerateSummary();
+        }
+    }
+
+    private async Task ShowTooltip()
+    {
+        IsSummaryVisible = true;
+        if (string.IsNullOrEmpty(_summaryText))
+        {
+            // For tooltip, we might want a shorter debounce or immediate if it's "OnHover" logic.
+            // Using a separate lighter request for tooltip?
+            // "Inline Tooltip / Popover: Hover over a truncated text ... to see a 1-sentence TL;DR"
+            // So we should force LengthPreference = TlDr for tooltip.
+            await GenerateSummary(SummaryLengthPreference.TlDr);
+        }
+    }
+
+    private void HideTooltip()
+    {
+        IsSummaryVisible = false;
+    }
+
+    private async Task GenerateSummary(SummaryLengthPreference? overridePref = null)
+    {
+        if (string.IsNullOrWhiteSpace(Text)) return;
+
+        await TriggerInferenceAsync(async (token) =>
+        {
+             _summaryText = "";
+             StateHasChanged();
+
+             var request = new SmartSummaryRequestData
+             {
+                 Text = Text,
+                 LengthPreference = overridePref ?? LengthPreference
+             };
+
+             // Streaming Logic
+             // We can iterate over the IAsyncEnumerable directly here.
+             await foreach (var chunk in InferenceService.SummarizeStreamingAsync(ChatClient, request, token))
+             {
+                 _summaryText += chunk;
+                 StateHasChanged();
+             }
+        });
+    }
+
+    private string RenderSummaryWithCitations(string markdown)
+    {
+        // Simple markdown rendering for now.
+        // Citations logic ("Source Linking") requires parsing JSON index ranges which we haven't implemented fully in backend yet.
+        // Backend currently returns markdown string.
+        // We can just return markdown or basic HTML.
+        // For MVP, just return text. Markdig or similar would serve better.
+        // But for "smart-components", maybe we want raw text?
+        // The implementation plan says "Output: Markdown string".
+        // Blazor doesn't render markdown natively.
+        // We might need a markdown processing library or just display raw text for now.
+        return markdown.Replace("\n", "<br>");
+    }
+}
+
+@code {
+    public enum SmartSummaryMode
+    {
+        CollapsibleCard,
+        InlineTooltip
+    }
+}

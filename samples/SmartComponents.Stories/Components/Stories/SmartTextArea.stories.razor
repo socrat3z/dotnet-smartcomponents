@@ -1,0 +1,44 @@
+@attribute [Stories("Smart Components/SmartTextArea")]
+@using SmartComponents
+@using SmartComponents.AspNetCore.Components
+
+<Stories TComponent="SmartTextArea">
+    <Story Name="Basic">
+        <Template>
+            <style>
+                .form-control {
+                    width: 100%;
+                    padding: 8px;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
+                    box-sizing: border-box;
+                    font-family: inherit;
+                }
+            </style>
+            <div style="padding: 20px; max-width: 600px; font-family: sans-serif;">
+                <h3>Smart Text Area</h3>
+                <p style="margin-bottom: 10px; color: #666;">Type below. The text is bound to the model.</p>
+                
+                <EditForm Model="_model" Context="editContext">
+                    <div style="margin-bottom: 15px;">
+                        <SmartTextArea UserRole="A customer service representative" 
+                                       class="form-control"
+                                       style="height: 150px;" 
+                                       Value="@_model.Message"
+                                       ValueChanged="@(v => _model.Message = v)"
+                                       ValueExpression="@(() => _model.Message)" />
+                    </div>
+                </EditForm>
+                
+                <div style="padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                    <strong>Current Value:</strong> <pre style="margin: 5px 0 0;">@_model.Message</pre>
+                </div>
+            </div>
+        </Template>
+    </Story>
+</Stories>
+
+@code {
+    private SampleModel _model = new();
+    public class SampleModel { public string? Message { get; set; } }
+}

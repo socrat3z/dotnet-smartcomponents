@@ -33,6 +33,8 @@ public static class SmartComponentsServiceCollectionExtensions
         services.TryAddScoped<ISmartTextAreaInference, SmartTextAreaInference>();
         services.TryAddScoped<ISmartPasteInference, SmartPasteInference>();
         services.TryAddScoped<ISmartTranslateInference, SmartTranslateInference>();
+        services.TryAddScoped<ISmartSummaryInference, SmartSummaryInference>();
+        services.TryAddScoped<ISmartImageInference, SmartImageInference>();
 
         services.AddTransient<IStartupFilter, AttachSmartComponentsEndpointsStartupFilter>();
         services.AddTransient<ITagHelperComponent, SmartComponentsScriptTagHelperComponent>();
@@ -108,10 +110,54 @@ public static class SmartComponentsServiceCollectionExtensions
                     return result.BadRequest ? Results.BadRequest() : Results.Json(result); 
                 });
 
+                var smartSummaryEndpoint = app.MapPost("/_smartcomponents/smartsummary", async (HttpContext httpContext, [FromServices] IChatClient inference, [FromServices] IAntiforgery antiforgery, [FromServices] ISmartSummaryInference smartSummaryInference) =>
+                {
+                    if (validateAntiforgery)
+                    {
+                        await antiforgery.ValidateRequestAsync(httpContext);
+                    }
+
+                    if (!httpContext.Request.Form.TryGetValue("dataJson", out var dataJson))
+                    {
+                        httpContext.Response.StatusCode = 400;
+                        await httpContext.Response.WriteAsync("dataJson is required");
+                        return;
+                    }
+
+                    var requestData = JsonSerializer.Deserialize<SmartSummaryRequestData>(dataJson.ToString(), new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+
+                    httpContext.Response.ContentType = "text/plain; charset=utf-8";
+
+                    await foreach (var chunk in smartSummaryInference.SummarizeStreamingAsync(inference, requestData, httpContext.RequestAborted))
+                    {
+                        await httpContext.Response.WriteAsync(chunk, httpContext.RequestAborted);
+                        await httpContext.Response.Body.FlushAsync(httpContext.RequestAborted);
+                    }
+                });
+
+                var smartImageEndpoint = app.MapPost("/_smartcomponents/smartimage", async ([FromServices] IChatClient inference, HttpContext httpContext, [FromServices] IAntiforgery antiforgery, [FromServices] ISmartImageInference smartImageInference) =>
+                {
+                    if (validateAntiforgery)
+                    {
+                        await antiforgery.ValidateRequestAsync(httpContext);
+                    }
+
+                    if (!httpContext.Request.Form.TryGetValue("dataJson", out var dataJson))
+                    {
+                        return Results.BadRequest("dataJson is required");
+                    }
+
+                    var requestData = JsonSerializer.Deserialize<SmartImageRequestData>(dataJson.ToString(), new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+                    var result = await smartImageInference.AnalyzeImageAsync(inference, requestData);
+                    return result == null ? Results.BadRequest() : Results.Json(result);
+                });
+
                 // These APIs only exist on .NET 8+. It wasn't enabled by default in prior versions.
                 smartPasteEndpoint.DisableAntiforgery();
                 smartTextAreaEndpoint.DisableAntiforgery();
                 smartTranslateEndpoint.DisableAntiforgery();
+                smartSummaryEndpoint.DisableAntiforgery();
+                smartImageEndpoint.DisableAntiforgery();
             });
         };
     }
